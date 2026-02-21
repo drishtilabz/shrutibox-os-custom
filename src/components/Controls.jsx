@@ -2,16 +2,18 @@
  * @fileoverview Panel de controles del Shrutibox.
  *
  * Incluye:
+ * - Selector de instrumento: elige el motor de audio (Base Sound, Shrutibox Prototype, etc.)
  * - Boton Play/Stop: activa/desactiva la reproduccion del drone
  * - Volumen: control deslizante de 0 a 100%
  * - Selector de octava: elige la octava activa para el teclado (3, 4, 5)
  * - Velocidad: ajusta la velocidad del envelope (attack/release)
  *
- * Los controles de octava y velocidad estan condicionados por feature flags.
+ * Los controles estan condicionados por feature flags.
  */
 
 import useShrutiStore from '../store/useShrutiStore';
 import { FEATURE_FLAGS } from '../config/featureFlags';
+import { INSTRUMENTS } from '../audio/instruments';
 
 export default function Controls() {
   const volume = useShrutiStore((s) => s.volume);
@@ -24,11 +26,41 @@ export default function Controls() {
   const togglePlay = useShrutiStore((s) => s.togglePlay);
   const selectedNotes = useShrutiStore((s) => s.selectedNotes);
   const mode = useShrutiStore((s) => s.mode);
+  const instrumentId = useShrutiStore((s) => s.instrumentId);
+  const setInstrument = useShrutiStore((s) => s.setInstrument);
 
   const octaveOptions = mode === '1oct' ? [3] : [3, 4, 5];
 
   return (
     <div className="bg-amber-950/60 backdrop-blur-sm rounded-2xl border border-amber-800/40 p-5 space-y-5">
+      {/* Selector de instrumento */}
+      {FEATURE_FLAGS.ENABLE_INSTRUMENT_SELECTOR && (
+        <div className="space-y-2">
+          <label className="text-xs text-amber-400/70 uppercase tracking-wider font-medium block">
+            Instrumento
+          </label>
+          <div className="flex gap-2">
+            {INSTRUMENTS.map((inst) => (
+              <button
+                key={inst.id}
+                onClick={() => setInstrument(inst.id)}
+                className={`flex-1 py-2 px-3 rounded-lg text-sm font-bold transition-all ${
+                  inst.id === instrumentId
+                    ? 'bg-amber-500 text-amber-950 shadow-md'
+                    : 'bg-amber-900/40 text-amber-500/60 hover:bg-amber-800/50'
+                }`}
+              >
+                {inst.name}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {FEATURE_FLAGS.ENABLE_INSTRUMENT_SELECTOR && (
+        <div className="w-full h-px bg-amber-800/30" />
+      )}
+
       {/* Play / Stop */}
       <div className="flex flex-col items-center gap-3">
         <button

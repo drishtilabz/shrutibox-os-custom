@@ -18,4 +18,7 @@ export const FEATURE_FLAGS = {
 
   /** Habilita el layout optimizado para dispositivos moviles. */
   ENABLE_MOBILE_LAYOUT: true,
+
+  /** Muestra el selector de instrumento en el panel de controles. */
+  ENABLE_INSTRUMENT_SELECTOR: true,
 };

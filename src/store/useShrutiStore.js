@@ -3,6 +3,7 @@
  *
  * Gestiona el estado completo de la aplicacion:
  * - Inicializacion y modo seleccionado (1 o 3 octavas)
+ * - Instrumento activo (seleccion de motor de audio)
  * - Notas seleccionadas (toggle on/off)
  * - Estado de reproduccion (playing/stopped)
  * - Controles de audio (volumen, octava activa, velocidad)
@@ -16,7 +17,8 @@
  */
 
 import { create } from 'zustand';
-import audioManager from '../audio/AudioManager';
+import audioEngine from '../audio/audioEngine';
+import { INSTRUMENTS_BY_ID, DEFAULT_INSTRUMENT_ID } from '../audio/instruments';
 
 const useShrutiStore = create((set, get) => ({
   /** @type {boolean} true una vez que el audio esta inicializado. */
@@ -24,6 +26,9 @@ const useShrutiStore = create((set, get) => ({
 
   /** @type {'1oct'|'3oct'|null} Modo de octavas seleccionado. */
   mode: null,
+
+  /** @type {string} ID del instrumento activo. */
+  instrumentId: DEFAULT_INSTRUMENT_ID,
 
   /** @type {string[]} IDs de notas seleccionadas (toggled on). */
   selectedNotes: [],
@@ -41,13 +46,43 @@ const useShrutiStore = create((set, get) => ({
   speed: 1.0,
 
   /**
-   * Inicializa el motor de audio y establece el modo de octavas.
+   * Inicializa el motor de audio del instrumento activo y establece el modo.
    * @param {'1oct'|'3oct'} mode - Modo seleccionado por el usuario
    */
   init: async (mode) => {
-    await audioManager.init();
-    audioManager.setVolume(get().volume);
+    const { instrumentId, volume } = get();
+    const instrument = INSTRUMENTS_BY_ID[instrumentId];
+    await instrument.engine.init();
+    audioEngine.setEngine(instrument.engine);
+    audioEngine.setVolume(volume);
     set({ initialized: true, mode });
+  },
+
+  /**
+   * Cambia el instrumento activo en runtime.
+   * Si el drone esta sonando, detiene el motor anterior, inicializa el nuevo,
+   * restaura los ajustes de audio y re-reproduce las notas seleccionadas.
+   * @param {string} instrumentId - ID del instrumento destino
+   */
+  setInstrument: async (instrumentId) => {
+    const { playing, selectedNotes, volume, speed } = get();
+    const instrument = INSTRUMENTS_BY_ID[instrumentId];
+    if (!instrument) return;
+
+    if (playing) {
+      audioEngine.stopAll();
+    }
+
+    await instrument.engine.init();
+    audioEngine.setEngine(instrument.engine);
+    audioEngine.setVolume(volume);
+    audioEngine.setSpeed(speed);
+
+    if (playing && selectedNotes.length > 0) {
+      audioEngine.playNotes(selectedNotes);
+    }
+
+    set({ instrumentId });
   },
 
   /**
@@ -62,12 +97,12 @@ const useShrutiStore = create((set, get) => ({
 
     if (isSelected) {
       if (playing) {
-        audioManager.stopNote(noteId);
+        audioEngine.stopNote(noteId);
       }
       set({ selectedNotes: selectedNotes.filter((id) => id !== noteId) });
     } else {
       if (playing) {
-        audioManager.playNote(noteId);
+        audioEngine.playNote(noteId);
       }
       set({ selectedNotes: [...selectedNotes, noteId] });
     }
@@ -82,11 +117,11 @@ const useShrutiStore = create((set, get) => ({
     const { playing, selectedNotes } = get();
 
     if (playing) {
-      audioManager.stopAll();
+      audioEngine.stopAll();
       set({ playing: false });
     } else {
       if (selectedNotes.length > 0) {
-        audioManager.playNotes(selectedNotes);
+        audioEngine.playNotes(selectedNotes);
       }
       set({ playing: true });
     }
@@ -97,7 +132,7 @@ const useShrutiStore = create((set, get) => ({
    * @param {number} value - Valor entre 0 y 1
    */
   setVolume: (value) => {
-    audioManager.setVolume(value);
+    audioEngine.setVolume(value);
     set({ volume: value });
   },
 
@@ -112,7 +147,7 @@ const useShrutiStore = create((set, get) => ({
    * @param {number} speed - Multiplicador (0.25 a 3)
    */
   setSpeed: (speed) => {
-    audioManager.setSpeed(speed);
+    audioEngine.setSpeed(speed);
     set({ speed });
   },
 
@@ -122,11 +157,12 @@ const useShrutiStore = create((set, get) => ({
   reset: () => {
     const { playing } = get();
     if (playing) {
-      audioManager.stopAll();
+      audioEngine.stopAll();
     }
     set({
       initialized: false,
       mode: null,
+      instrumentId: DEFAULT_INSTRUMENT_ID,
       selectedNotes: [],
       playing: false,
       octave: 3,

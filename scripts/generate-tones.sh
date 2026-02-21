@@ -26,9 +26,9 @@ NOTES=(
 )
 
 declare -A OCTAVE_MULT
-OCTAVE_MULT=( [1]=0.5 [2]=1.0 [3]=2.0 )
+OCTAVE_MULT=( [3]=0.5 [4]=1.0 [5]=2.0 )
 
-for octave in 1 2 3; do
+for octave in 3 4 5; do
   dir="${BASE_DIR}/octave_${octave}"
   mkdir -p "$dir"
 
@@ -55,7 +55,7 @@ done
 
 # Sa superior (octava 4)
 sa_high_freq=$(echo "261.63 * 4" | bc -l)
-outfile="${BASE_DIR}/octave_3/sa_high.mp3"
+outfile="${BASE_DIR}/octave_5/sa_high.mp3"
 if [ ! -f "$outfile" ]; then
   echo "  Generando: $outfile (${sa_high_freq} Hz)"
   ffmpeg -y -f lavfi \
