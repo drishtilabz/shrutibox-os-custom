@@ -3,23 +3,22 @@
  *
  * Alternativa al AudioManager sintetico: reproduce samples de audio reales
  * (archivos MP3) con loop continuo para generar el drone del shrutibox.
- * Cada nota carga su propio buffer desde la ruta definida en noteMap.js.
+ * Cada nota carga su propio buffer desde una ruta construida a partir del
+ * basePath configurado en el constructor.
  *
- * Usa Tone.Player con loop seamless (loopStart/loopEnd + fadeIn/fadeOut)
- * para evitar clicks en los puntos de loop. Exporta una instancia singleton
- * con la misma interfaz publica que AudioManager.
+ * Usa Tone.Player con loop seamless (loopStart/loopEnd + fadeIn/fadeOut).
+ * Exporta la clase para permitir multiples instancias con distintos conjuntos
+ * de samples y configuraciones de loop.
  *
- * Fase A (prototipo): samples generados por pitch-shifting desde un WAV fuente.
- * Fase B (produccion): samples grabados individualmente por nota.
+ * Instancias actuales:
+ * - basePath='/sounds'          → samples interpolados (Shrutibox Prototype)
+ * - basePath='/sounds-mks'      → grabaciones reales (Shrutibox MKS)
+ * - basePath='/sounds-mks-xfade'→ grabaciones con crossfade baked-in (MKS Crossfade)
  */
 
 import * as Tone from 'tone';
-import { NOTES, NOTES_BY_ID } from './noteMap';
+import { NOTES } from './noteMap';
 
-/**
- * Valores por defecto para el loop de samples.
- * Ajustables en Fase B cuando se usen grabaciones individuales por nota.
- */
 const LOOP_DEFAULTS = {
   loopStart: 1.0,
   loopEnd: 5.0,
@@ -28,24 +27,34 @@ const LOOP_DEFAULTS = {
 };
 
 class SampleAudioManager {
-  constructor() {
-    /** @type {boolean} Indica si el contexto de audio y los buffers estan listos. */
+  /**
+   * @param {string} basePath - Directorio base de los samples (ej: '/sounds', '/sounds-mks').
+   *   La estructura esperada es: basePath/fileKey.mp3
+   * @param {object} [options] - Overrides para la configuracion de loop.
+   * @param {number} [options.loopStart] - Inicio del loop en segundos.
+   * @param {number|null} [options.loopEnd] - Fin del loop en segundos. null = duracion completa del buffer.
+   * @param {number} [options.fadeIn] - Fade-in al iniciar reproduccion.
+   * @param {number} [options.fadeOut] - Fade-out al detener reproduccion.
+   */
+  constructor(basePath = '/sounds', options = {}) {
+    this.basePath = basePath;
+    this.loopConfig = { ...LOOP_DEFAULTS, ...options };
     this.initialized = false;
-
-    /** @type {Map<string, Tone.ToneAudioBuffer>} Buffers precargados por noteId. */
     this.buffers = new Map();
-
-    /** @type {Map<string, Tone.Player>} Players activos indexados por noteId. */
     this.activePlayers = new Map();
-
-    /** @type {Tone.Volume} Nodo de volumen maestro conectado a la salida. */
     this.volume = new Tone.Volume(-6).toDestination();
+    this.fadeInTime = this.loopConfig.fadeIn;
+    this.fadeOutTime = this.loopConfig.fadeOut;
+  }
 
-    /** @type {number} Tiempo de fade-in en segundos (equivale al attack del synth). */
-    this.fadeInTime = LOOP_DEFAULTS.fadeIn;
-
-    /** @type {number} Tiempo de fade-out en segundos (equivale al release del synth). */
-    this.fadeOutTime = LOOP_DEFAULTS.fadeOut;
+  /**
+   * Construye la ruta del archivo MP3 para una nota.
+   * @param {object} note - Objeto de nota de noteMap.js
+   * @returns {string} Ruta al archivo MP3
+   * @private
+   */
+  _filePath(note) {
+    return `${this.basePath}/${note.fileKey}.mp3`;
   }
 
   /**
@@ -61,7 +70,7 @@ class SampleAudioManager {
       (note) =>
         new Promise((resolve, reject) => {
           const buffer = new Tone.ToneAudioBuffer(
-            note.file,
+            this._filePath(note),
             () => {
               this.buffers.set(note.id, buffer);
               resolve();
@@ -90,16 +99,21 @@ class SampleAudioManager {
       this._stopPlayer(noteId);
     }
 
+    const loopEnd = this.loopConfig.loopEnd != null
+      ? Math.min(this.loopConfig.loopEnd, buffer.duration - 0.1)
+      : buffer.duration;
+
     const player = new Tone.Player({
       url: buffer,
       loop: true,
-      loopStart: LOOP_DEFAULTS.loopStart,
-      loopEnd: Math.min(LOOP_DEFAULTS.loopEnd, buffer.duration - 0.1),
+      loopStart: this.loopConfig.loopStart,
+      loopEnd,
       fadeIn: this.fadeInTime,
       fadeOut: this.fadeOutTime,
     }).connect(this.volume);
 
-    player.start();
+    const startOffset = this.loopConfig.loopStart || 0.01;
+    player.start(undefined, startOffset);
     this.activePlayers.set(noteId, player);
   }
 
@@ -160,8 +174,8 @@ class SampleAudioManager {
    * @param {number} speed - Multiplicador de velocidad (ej: 0.5 = lento, 2 = rapido)
    */
   setSpeed(speed) {
-    this.fadeInTime = LOOP_DEFAULTS.fadeIn / speed;
-    this.fadeOutTime = LOOP_DEFAULTS.fadeOut / speed;
+    this.fadeInTime = this.loopConfig.fadeIn / speed;
+    this.fadeOutTime = this.loopConfig.fadeOut / speed;
   }
 
   /**
@@ -180,6 +194,4 @@ class SampleAudioManager {
   }
 }
 
-/** Instancia singleton del motor de audio basado en samples. */
-const sampleAudioManager = new SampleAudioManager();
-export default sampleAudioManager;
+export default SampleAudioManager;

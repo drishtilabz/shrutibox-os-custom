@@ -26,13 +26,23 @@ npm comes bundled with Node.js, so no separate installation is needed.
    - Someone adds a new dependency to `package.json`.
    - You delete the `node_modules/` folder.
 
-3. Start the development server:
+3. (Optional) Generate audio samples for the sample-based instruments. Requires **ffmpeg** and **bc** (`brew install ffmpeg`):
+
+   ```bash
+   bash scripts/generate-samples.sh            # Shrutibox Prototype (13 interpolated samples)
+   bash scripts/generate-mks-samples.sh        # Shrutibox MKS (13 real recordings)
+   bash scripts/generate-mks-xfade-samples.sh  # MKS Crossfade (13 samples with seamless loop)
+   ```
+
+   Without this step, only the "Base Sound" (synth) and "MKS Grain" instruments will work. MKS Grain uses the same samples as Shrutibox MKS, so running `generate-mks-samples.sh` enables both.
+
+4. Start the development server:
 
    ```bash
    npm run dev
    ```
 
-4. Open **http://localhost:5173** in your browser. The app should be up and running.
+5. Open **http://localhost:5173** in your browser. The app should be up and running.
 
 ## Daily Workflow
 
@@ -63,4 +73,4 @@ This is normal. These are known issues in upstream packages and do not affect lo
 Some open-source packages ask for donations. You can safely ignore this message.
 
 **The app doesn't play sound when I open it.**
-Modern browsers require a user interaction (like a click) before playing audio. Click the start button on the screen to initialize audio.
+Modern browsers require a user interaction (like a click) before playing audio. Click the "Iniciar" button on the screen to initialize audio.

@@ -1,25 +1,20 @@
 /**
  * @fileoverview Hook de teclado para el Shrutibox.
  *
- * Mapea las teclas A-J a las 7 notas Sargam de la octava activa.
- * La barra espaciadora controla play/stop.
- * En el modelo toggle, cada pulsacion de tecla alterna la seleccion
- * de la nota (no se necesita keyup para desactivar).
- *
- * Teclas:
- * - A=Sa, S=Re, D=Ga, F=Ma, G=Pa, H=Dha, J=Ni
+ * Mapea teclas fisicas a las 13 notas cromaticas, estilo piano:
+ * - Fila inferior (shuddh): A=Sa, S=Re, D=Ga, F=Ma, G=Pa, H=Dha, J=Ni, K=Sa↑
+ * - Fila superior (komal/tivra): W=Re♭, E=Ga♭, T=Ma#, Y=Dha♭, U=Ni♭
  * - Espacio = Play/Stop
  */
 
 import { useEffect, useRef } from 'react';
 import useShrutiStore from '../store/useShrutiStore';
-import { KEYBOARD_MAP, getNotesForOctave } from '../audio/noteMap';
+import { KEYBOARD_MAP } from '../audio/noteMap';
 import { FEATURE_FLAGS } from '../config/featureFlags';
 
 export default function useKeyboard() {
   const toggleNoteRef = useRef(null);
   const togglePlayRef = useRef(null);
-  const octaveRef = useRef(3);
 
   useEffect(() => {
     toggleNoteRef.current = useShrutiStore.getState().toggleNote;
@@ -28,7 +23,6 @@ export default function useKeyboard() {
     const unsubscribe = useShrutiStore.subscribe((state) => {
       toggleNoteRef.current = state.toggleNote;
       togglePlayRef.current = state.togglePlay;
-      octaveRef.current = state.octave;
     });
 
     return unsubscribe;
@@ -47,13 +41,9 @@ export default function useKeyboard() {
         return;
       }
 
-      const noteIndex = KEYBOARD_MAP[e.key.toLowerCase()];
-      if (noteIndex === undefined) return;
-
-      const notes = getNotesForOctave(octaveRef.current);
-      const note = notes[noteIndex];
-      if (note) {
-        toggleNoteRef.current?.(note.id);
+      const noteId = KEYBOARD_MAP[e.key.toLowerCase()];
+      if (noteId) {
+        toggleNoteRef.current?.(noteId);
       }
     }
 

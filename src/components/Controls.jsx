@@ -2,10 +2,9 @@
  * @fileoverview Panel de controles del Shrutibox.
  *
  * Incluye:
- * - Selector de instrumento: elige el motor de audio (Base Sound, Shrutibox Prototype, etc.)
+ * - Selector de instrumento: elige el motor de audio
  * - Boton Play/Stop: activa/desactiva la reproduccion del drone
  * - Volumen: control deslizante de 0 a 100%
- * - Selector de octava: elige la octava activa para el teclado (3, 4, 5)
  * - Velocidad: ajusta la velocidad del envelope (attack/release)
  *
  * Los controles estan condicionados por feature flags.
@@ -18,18 +17,13 @@ import { INSTRUMENTS } from '../audio/instruments';
 export default function Controls() {
   const volume = useShrutiStore((s) => s.volume);
   const setVolume = useShrutiStore((s) => s.setVolume);
-  const octave = useShrutiStore((s) => s.octave);
-  const setOctave = useShrutiStore((s) => s.setOctave);
   const speed = useShrutiStore((s) => s.speed);
   const setSpeed = useShrutiStore((s) => s.setSpeed);
   const playing = useShrutiStore((s) => s.playing);
   const togglePlay = useShrutiStore((s) => s.togglePlay);
   const selectedNotes = useShrutiStore((s) => s.selectedNotes);
-  const mode = useShrutiStore((s) => s.mode);
   const instrumentId = useShrutiStore((s) => s.instrumentId);
   const setInstrument = useShrutiStore((s) => s.setInstrument);
-
-  const octaveOptions = mode === '1oct' ? [3] : [3, 4, 5];
 
   return (
     <div className="bg-amber-950/60 backdrop-blur-sm rounded-2xl border border-amber-800/40 p-5 space-y-5">
@@ -127,30 +121,6 @@ export default function Controls() {
           className="w-full h-2 rounded-full appearance-none bg-amber-900/60 accent-amber-500 cursor-pointer"
         />
       </div>
-
-      {/* Selector de octava para teclado */}
-      {FEATURE_FLAGS.ENABLE_OCTAVE_SELECTOR && octaveOptions.length > 1 && (
-        <div className="space-y-2">
-          <label className="text-xs text-amber-400/70 uppercase tracking-wider font-medium block">
-            Octava (teclado)
-          </label>
-          <div className="flex gap-2">
-            {octaveOptions.map((o) => (
-              <button
-                key={o}
-                onClick={() => setOctave(o)}
-                className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all ${
-                  o === octave
-                    ? 'bg-amber-500 text-amber-950 shadow-md'
-                    : 'bg-amber-900/40 text-amber-500/60 hover:bg-amber-800/50'
-                }`}
-              >
-                {o}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
 
       {/* Velocidad */}
       {FEATURE_FLAGS.ENABLE_SPEED_CONTROL && (

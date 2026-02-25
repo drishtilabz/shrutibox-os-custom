@@ -10,7 +10,22 @@
  */
 
 import audioManager from './AudioManager';
-import sampleAudioManager from './SampleAudioManager';
+import SampleAudioManager from './SampleAudioManager';
+import GrainAudioManager from './GrainAudioManager';
+
+/*
+ * Instrumentos ocultos — listos para futuras implementacion o deprecacion.
+ *
+ * const baseSoundManager = audioManager;           // Base Sound (sintesis PolySynth fatsine)
+ * const sampleAudioManager = new SampleAudioManager('/sounds');  // Shrutibox Prototype (samples interpolados)
+ * const mksCrossfadeManager = new SampleAudioManager('/sounds-mks-xfade', {
+ *   loopStart: 0,
+ *   loopEnd: null,
+ * });  // MKS Crossfade (samples con crossfade baked-in)
+ */
+
+const mksSampleAudioManager = new SampleAudioManager('/sounds-mks');
+const mksGrainManager = new GrainAudioManager('/sounds-mks');
 
 /**
  * Lista ordenada de instrumentos disponibles.
@@ -18,12 +33,12 @@ import sampleAudioManager from './SampleAudioManager';
  * @type {Array<{id: string, name: string, engine: object}>}
  */
 export const INSTRUMENTS = [
-  { id: 'base-sound', name: 'Base Sound', engine: audioManager },
-  { id: 'shrutibox-prototype', name: 'Shrutibox Prototype', engine: sampleAudioManager },
+  { id: 'shrutibox-mks', name: 'Shrutibox MKS', engine: mksSampleAudioManager },
+  { id: 'mks-grain', name: 'MKS Grain', engine: mksGrainManager },
 ];
 
 /** ID del instrumento por defecto al iniciar la aplicacion. */
-export const DEFAULT_INSTRUMENT_ID = 'base-sound';
+export const DEFAULT_INSTRUMENT_ID = 'shrutibox-mks';
 
 /** Diccionario de instrumentos indexado por id para busqueda O(1). */
 export const INSTRUMENTS_BY_ID = Object.fromEntries(

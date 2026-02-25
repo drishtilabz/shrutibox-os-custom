@@ -1,11 +1,8 @@
 /**
  * @fileoverview Display informativo del Shrutibox.
  *
- * Muestra:
- * - La ultima nota seleccionada (nombre Sargam, notacion occidental, frecuencia)
- * - Indicador de estado de reproduccion (playing/stopped)
- * - Indicadores de octava activa para el teclado
- * - Contador de notas seleccionadas
+ * Muestra la ultima nota seleccionada (nombre Sargam, notacion occidental,
+ * frecuencia), indicador de estado de reproduccion y contador de notas activas.
  */
 
 import useShrutiStore from '../store/useShrutiStore';
@@ -13,14 +10,17 @@ import { NOTES_BY_ID } from '../audio/noteMap';
 
 export default function Display() {
   const selectedNotes = useShrutiStore((s) => s.selectedNotes);
-  const octave = useShrutiStore((s) => s.octave);
   const playing = useShrutiStore((s) => s.playing);
-  const mode = useShrutiStore((s) => s.mode);
 
   const lastNoteId = selectedNotes[selectedNotes.length - 1];
   const lastNote = lastNoteId ? NOTES_BY_ID[lastNoteId] : null;
 
-  const octaveIndicators = mode === '1oct' ? [3] : [3, 4, 5];
+  const variantLabel =
+    lastNote?.variant === 'komal'
+      ? ' komal'
+      : lastNote?.variant === 'tivra'
+        ? ' tivra'
+        : '';
 
   return (
     <div className="bg-amber-950/60 backdrop-blur-sm rounded-2xl border border-amber-800/40 px-6 py-5 text-center">
@@ -43,12 +43,12 @@ export default function Display() {
               className={`text-5xl font-bold text-amber-100 ${playing ? 'animate-pulse' : ''}`}
             >
               {lastNote.name}
+              {variantLabel && (
+                <span className="text-2xl text-amber-400/70">{variantLabel}</span>
+              )}
             </div>
             <div className="flex items-center gap-3 mt-2 text-amber-300/70 text-sm">
-              <span>
-                {lastNote.western}
-                {lastNote.octave}
-              </span>
+              <span>{lastNote.western}</span>
               <span className="w-1 h-1 rounded-full bg-amber-500/50" />
               <span>{lastNote.frequency} Hz</span>
             </div>
@@ -60,29 +60,11 @@ export default function Display() {
         )}
       </div>
 
-      <div className="mt-3 flex items-center justify-center gap-2">
-        <span className="text-amber-500/50 text-xs">Octava</span>
-        {octaveIndicators.map((o) => (
-          <span
-            key={o}
-            className={`w-6 h-6 rounded-full text-xs flex items-center justify-center font-bold transition-all ${
-              o === octave
-                ? 'bg-amber-500 text-amber-950'
-                : 'bg-amber-900/40 text-amber-600/50'
-            }`}
-          >
-            {o}
-          </span>
-        ))}
-        {selectedNotes.length > 0 && (
-          <>
-            <span className="w-1 h-1 rounded-full bg-amber-500/30 mx-1" />
-            <span className="text-amber-500/50 text-xs">
-              {selectedNotes.length} {selectedNotes.length === 1 ? 'nota' : 'notas'}
-            </span>
-          </>
-        )}
-      </div>
+      {selectedNotes.length > 0 && (
+        <div className="mt-3 text-amber-500/50 text-xs">
+          {selectedNotes.length} {selectedNotes.length === 1 ? 'nota activa' : 'notas activas'}
+        </div>
+      )}
     </div>
   );
 }

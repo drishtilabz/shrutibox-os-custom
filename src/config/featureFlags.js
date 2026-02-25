@@ -7,14 +7,11 @@
 
 /** @type {Record<string, boolean>} */
 export const FEATURE_FLAGS = {
-  /** Habilita el control del instrumento mediante teclado fisico (A-J, espacio). */
+  /** Habilita el control del instrumento mediante teclado fisico. */
   ENABLE_KEYBOARD: true,
 
-  /** Muestra el selector de octava activa para el teclado en el panel de controles. */
-  ENABLE_OCTAVE_SELECTOR: true,
-
   /** Muestra el control deslizante de velocidad (attack/release). */
-  ENABLE_SPEED_CONTROL: true,
+  ENABLE_SPEED_CONTROL: false,
 
   /** Habilita el layout optimizado para dispositivos moviles. */
   ENABLE_MOBILE_LAYOUT: true,

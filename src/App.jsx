@@ -1,9 +1,8 @@
 /**
  * @fileoverview Componente raiz del Shrutibox Digital.
  *
- * Renderiza la pantalla de inicio (StartScreen) donde el usuario
- * elige entre 1 o 3 octavas, y luego muestra el instrumento
- * (ShrutiboxApp) con la configuracion seleccionada.
+ * Muestra una pantalla de inicio con boton para activar el audio
+ * (requisito del navegador), y luego renderiza el instrumento.
  */
 
 import { useCallback } from 'react';
@@ -13,13 +12,7 @@ import Display from './components/Display';
 import NoteGrid from './components/NoteGrid';
 import Controls from './components/Controls';
 
-/**
- * Pantalla de bienvenida con selector de modo.
- * Ofrece dos opciones: shrutibox de 1 octava o 3 octavas.
- * Al seleccionar, inicializa el audio y carga el instrumento.
- * @param {{ onSelect: (mode: '1oct'|'3oct') => void }} props
- */
-function StartScreen({ onSelect }) {
+function StartScreen({ onStart }) {
   return (
     <div className="min-h-screen bg-gradient-to-b from-amber-950 via-stone-950 to-stone-950 flex items-center justify-center p-6">
       <div className="text-center max-w-md space-y-8">
@@ -35,27 +28,16 @@ function StartScreen({ onSelect }) {
         <div className="w-24 h-px bg-gradient-to-r from-transparent via-amber-700/50 to-transparent mx-auto" />
 
         <p className="text-amber-300/50 text-sm leading-relaxed">
-          Selecciona el tipo de shrutibox para comenzar.
-          Activa las notas y luego presiona Play para reproducir el drone.
+          13 notas cromaticas &mdash; Sa Re Ga Ma Pa Dha Ni<br />
+          con variantes komal y tivra
         </p>
 
-        <div className="flex flex-col sm:flex-row gap-4 justify-center">
-          <button
-            onClick={() => onSelect('1oct')}
-            className="px-8 py-4 bg-amber-500 hover:bg-amber-400 text-amber-950 font-bold text-lg rounded-2xl transition-all hover:scale-105 active:scale-95 shadow-lg shadow-amber-500/20"
-          >
-            <span className="block text-2xl mb-1">1</span>
-            <span className="text-sm font-medium">Octava</span>
-          </button>
-
-          <button
-            onClick={() => onSelect('3oct')}
-            className="px-8 py-4 bg-amber-600 hover:bg-amber-500 text-amber-950 font-bold text-lg rounded-2xl transition-all hover:scale-105 active:scale-95 shadow-lg shadow-amber-600/20"
-          >
-            <span className="block text-2xl mb-1">3</span>
-            <span className="text-sm font-medium">Octavas</span>
-          </button>
-        </div>
+        <button
+          onClick={onStart}
+          className="px-10 py-5 bg-amber-500 hover:bg-amber-400 text-amber-950 font-bold text-lg rounded-2xl transition-all hover:scale-105 active:scale-95 shadow-lg shadow-amber-500/20"
+        >
+          Iniciar
+        </button>
 
         <p className="text-amber-800/40 text-xs">
           Se requiere interaccion para activar el audio del navegador
@@ -65,17 +47,13 @@ function StartScreen({ onSelect }) {
   );
 }
 
-/**
- * Componente principal del instrumento.
- * Renderiza el display, la grilla de notas y los controles.
- */
 function ShrutiboxApp() {
   useKeyboard();
   const reset = useShrutiStore((s) => s.reset);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-amber-950 via-stone-950 to-stone-950 p-4 sm:p-6">
-      <div className="max-w-2xl mx-auto space-y-5">
+      <div className="max-w-4xl mx-auto space-y-5">
         <div className="flex items-center justify-between">
           <button
             onClick={reset}
@@ -93,7 +71,7 @@ function ShrutiboxApp() {
                 clipRule="evenodd"
               />
             </svg>
-            Menú
+            Inicio
           </button>
         </div>
 
@@ -109,23 +87,16 @@ function ShrutiboxApp() {
   );
 }
 
-/**
- * Componente raiz. Muestra StartScreen hasta que el usuario elija modo,
- * luego renderiza el instrumento.
- */
 export default function App() {
   const initialized = useShrutiStore((s) => s.initialized);
   const init = useShrutiStore((s) => s.init);
 
-  const handleSelect = useCallback(
-    (mode) => {
-      init(mode);
-    },
-    [init],
-  );
+  const handleStart = useCallback(() => {
+    init();
+  }, [init]);
 
   if (!initialized) {
-    return <StartScreen onSelect={handleSelect} />;
+    return <StartScreen onStart={handleStart} />;
   }
 
   return <ShrutiboxApp />;

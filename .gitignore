@@ -25,5 +25,7 @@ dist-ssr
 
 .env
 
-# Audio generado (reproducible con scripts/generate-samples.sh)
+# Audio generado (reproducible con scripts/)
 public/sounds/
+public/sounds-mks/
+public/sounds-mks-xfade/

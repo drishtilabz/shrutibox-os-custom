@@ -1,20 +1,19 @@
 # Shrutibox Digital
 
-Replica digital de un shrutibox acustico **Monoj Kumar Sardar 440Hz**, construida como aplicacion web con dos motores de audio: sintesis en tiempo real y reproduccion de samples pregrabados.
+Replica digital de un shrutibox acustico **Monoj Kumar Sardar 440Hz**, construida como aplicacion web con multiples motores de audio: sintesis en tiempo real y reproduccion de samples pregrabados.
 
-El instrumento simula la experiencia de un shrutibox real: primero se seleccionan las notas (como abrir las lengüetas del instrumento), luego se activa la reproduccion (como bombear el fuelle) para generar el drone continuo.
+El instrumento simula la experiencia de un shrutibox real: 13 lengüetas cromaticas en una sola octava, con variantes komal (bemol) y tivra (sostenido). Primero se seleccionan las notas (como abrir las lengüetas del instrumento), luego se activa la reproduccion (como bombear el fuelle) para generar el drone continuo.
 
 ## Caracteristicas
 
-- **Selector de modo**: elige entre shrutibox de 1 octava (C3) o 3 octavas completas (C3-C6)
-- **Selector de instrumentos**: elige entre diferentes motores de audio desde la UI (Base Sound, Shrutibox Prototype), extensible a futuro
-- **Sistema Sargam**: 7 notas por octava (Sa, Re, Ga, Ma, Pa, Dha, Ni) con notacion occidental
+- **13 notas cromaticas**: Sa, Re♭, Re, Ga♭, Ga, Ma, Ma♯, Pa, Dha♭, Dha, Ni♭, Ni, Sa (agudo)
+- **Selector de instrumentos**: elige entre Base Sound, Shrutibox Prototype, Shrutibox MKS, MKS Crossfade y MKS Grain
+- **UI tipo shrutibox**: panel frontal con 13 lengüetas/switches dispuestas horizontalmente
+- **Sistema Sargam**: notacion india con variantes shuddh, komal y tivra
 - **Toggle + Play/Stop**: selecciona notas con click, luego activa el drone con Play
 - **Modificacion en tiempo real**: agrega o quita notas mientras el drone suena
 - **Control de volumen**: ajuste de 0% a 100%
-- **Control de velocidad**: modifica attack/release del envelope (0.25x a 3x)
-- **Teclado fisico**: teclas A-J para las 7 notas, barra espaciadora para Play/Stop
-- **Selector de octava**: elige que octava controla el teclado (en modo 3 octavas)
+- **Teclado fisico**: mapeo estilo piano para las 13 notas + barra espaciadora para Play/Stop
 
 ## Stack tecnologico
 
@@ -32,13 +31,15 @@ El instrumento simula la experiencia de un shrutibox real: primero se selecciona
 shrutibox-os-custom/
 ├── public/
 │   ├── original-sounds/        # Audio fuente para generar samples
-│   │   └── 95345__iluppai__shruti-box.wav
-│   └── sounds/                 # Samples generados organizados por octava (gitignored)
-│       ├── octave_3/           # Octava 3 (Mandra ×0.5): sa.mp3 ... ni.mp3
-│       ├── octave_4/           # Octava 4 (Madhya ×1.0): sa.mp3 ... ni.mp3
-│       └── octave_5/           # Octava 5 (Tara ×2.0): sa.mp3 ... ni.mp3 + sa_high.mp3
+│   │   ├── 95345__iluppai__shruti-box.wav
+│   │   └── shrutibox-MKS-first-samplers/  # Grabaciones reales del shrutibox MKS
+│   ├── sounds/                 # Samples interpolados - Shrutibox Prototype (gitignored)
+│   ├── sounds-mks/             # Samples reales - Shrutibox MKS y MKS Grain (gitignored)
+│   └── sounds-mks-xfade/       # Samples con crossfade baked-in - MKS Crossfade (gitignored)
 ├── scripts/
-│   ├── generate-samples.sh     # Genera 22 samples MP3 desde el WAV fuente
+│   ├── generate-samples.sh     # Genera 13 samples MP3 por pitch-shifting (Prototype)
+│   ├── generate-mks-samples.sh # Convierte 13 WAV a MP3 (MKS)
+│   ├── generate-mks-xfade-samples.sh # Genera MP3 con crossfade baked-in (MKS Crossfade)
 │   ├── generate-tones.sh       # Genera tonos sinusoidales placeholder
 │   └── install.sh              # Script de instalacion automatizada
 ├── docs/
@@ -47,22 +48,23 @@ shrutibox-os-custom/
 ├── src/
 │   ├── main.jsx                # Punto de entrada de React
 │   ├── App.jsx                 # Componente raiz (StartScreen + ShrutiboxApp)
-│   ├── index.css               # Import de Tailwind CSS
+│   ├── index.css               # Tailwind CSS + estilos del shrutibox
 │   ├── audio/
 │   │   ├── audioEngine.js      # Proxy mutable: delega al motor de audio activo
 │   │   ├── instruments.js      # Registro de instrumentos disponibles
 │   │   ├── AudioManager.js     # Motor de sintesis (PolySynth fatsine)
 │   │   ├── SampleAudioManager.js # Motor de samples (Tone.Player con loop)
-│   │   └── noteMap.js          # Mapa de notas Sargam, frecuencias y octavas
+│   │   ├── GrainAudioManager.js  # Motor granular con dual player cycling
+│   │   └── noteMap.js          # 13 notas cromaticas (Sargam + komal/tivra)
 │   ├── store/
 │   │   └── useShrutiStore.js   # Store Zustand (estado + acciones)
 │   ├── components/
-│   │   ├── Display.jsx         # Panel informativo (nota activa, estado, octava)
-│   │   ├── NoteGrid.jsx        # Grilla de notas por octava
-│   │   ├── NoteButton.jsx      # Boton individual de nota (toggle)
-│   │   └── Controls.jsx        # Instrumento, Play/Stop, volumen, octava, velocidad
+│   │   ├── Display.jsx         # Panel informativo (nota activa, estado)
+│   │   ├── NoteGrid.jsx        # Panel frontal del shrutibox (13 lengüetas)
+│   │   ├── NoteButton.jsx      # Lengüeta individual (toggle switch)
+│   │   └── Controls.jsx        # Instrumento, Play/Stop, volumen, velocidad
 │   ├── hooks/
-│   │   └── useKeyboard.js      # Mapeo de teclado fisico a notas
+│   │   └── useKeyboard.js      # Mapeo de teclado fisico (estilo piano)
 │   └── config/
 │       └── featureFlags.js     # Flags para habilitar/deshabilitar funciones
 ├── index.html                  # HTML base (punto de montaje)
@@ -80,7 +82,7 @@ La aplicacion sigue una arquitectura de **3 capas** con separacion clara de resp
 │                    CAPA DE PRESENTACION (React)                     │
 │                                                                     │
 │   Display ◄──────── NoteGrid ◄──────── Controls                    │
-│   (estado)      (NoteButton[])      (Instr/Play/Vol/Oct/Speed)     │
+│   (estado)      (13 NoteButton)     (Instr/Play/Vol)               │
 │                      │                     │                        │
 └──────────────────────┼─────────────────────┼────────────────────────┘
                        │ toggleNote()        │ togglePlay()
@@ -90,68 +92,38 @@ La aplicacion sigue una arquitectura de **3 capas** con separacion clara de resp
 │                    CAPA DE ESTADO (Zustand)                         │
 │                    useShrutiStore.js                                 │
 │                                                                     │
-│   ┌────────────┬──────────────┬─────────┬─────────┬──────────┐     │
-│   │initialized │ selectedNotes│ playing │ volume  │  speed   │     │
-│   │   mode     │   string[]   │  bool   │  0-1    │ 0.25-3   │     │
-│   │instrumentId│              │         │         │          │     │
-│   └────────────┴──────┬───────┴────┬────┴────┬────┴──────────┘     │
-│                       │            │         │                      │
-└───────────────────────┼────────────┼─────────┼──────────────────────┘
-                        │            │         │
-         playNote()     │ playNotes()│         │ setVolume()
-         stopNote()     │ stopAll()  │         │ setSpeed()
-                        ▼            ▼         ▼
+│   ┌────────────┬──────────────┬─────────┬─────────┐                │
+│   │initialized │ selectedNotes│ playing │ volume  │                │
+│   │instrumentId│   string[]   │  bool   │  0-1    │                │
+│   │            │              │         │  speed  │                │
+│   └────────────┴──────┬───────┴────┬────┴─────────┘                │
+│                       │            │                                │
+└───────────────────────┼────────────┼────────────────────────────────┘
+                        │            │
+                        ▼            ▼
 ┌─────────────────────────────────────────────────────────────────────┐
 │                    CAPA DE AUDIO (Tone.js)                          │
 │                    audioEngine.js (Fachada)                         │
 │                                                                     │
-│   ┌─────────────────────────┐  ┌──────────────────────────────┐    │
-│   │ AudioManager (sintesis) │  │ SampleAudioManager (samples) │    │
-│   │ Map<noteId, PolySynth>  │  │ Map<noteId, Player>          │    │
-│   │ fatsine, spread:12      │  │ Tone.Player con loop         │    │
-│   └────────────┬────────────┘  └──────────────┬───────────────┘    │
-│                └──────────┬───────────────────┘                    │
-│                           ▼                                         │
-│                    Tone.Volume   →   Speaker                        │
-│                                                                     │
-│   noteMap.js: Sa Re Ga Ma Pa Dha Ni × 3 octavas + Sa_6             │
-└─────────────────────────────────────────────────────────────────────┘
+│   ┌────────────────┐ ┌──────────────────┐ ┌──────────────────┐   │
+│   │ AudioManager   │ │SampleAudioManager│ │SampleAudioManager│   │
+│   │ (Base Sound)   │ │(Shrutibox Proto) │ │ (Shrutibox MKS)  │   │
+│   │ PolySynth      │ │ /sounds/         │ │ /sounds-mks/     │   │
+│   │ fatsine        │ │ Tone.Player+loop │ │ Tone.Player+loop │   │
+│   └───────┬────────┘ └────────┬─────────┘ └────────┬─────────┘   │
+│           │   ┌───────────────────┐ ┌───────────────────┐        │
+│           │   │SampleAudioManager │ │GrainAudioManager  │        │
+│           │   │(MKS Crossfade)    │ │(MKS Grain)        │        │
+│           │   │/sounds-mks-xfade/ │ │/sounds-mks/       │        │
+│           │   │xfade baked-in     │ │dual player cycling│        │
+│           │   └─────────┬─────────┘ └─────────┬─────────┘        │
+│           └──────┬──────┴──────────┬──────────┘                  │
+│                  ▼                                                │
+│           Tone.Volume   →   Speaker                              │
+│                                                                   │
+│   noteMap.js: 13 notas cromaticas (Sa..Ni + komal/tivra + Sa↑)   │
+└───────────────────────────────────────────────────────────────────┘
 ```
-
-### Presentacion (React)
-
-Componentes que renderizan la UI y capturan interacciones del usuario:
-
-- **Display** — nota seleccionada, estado de reproduccion, indicadores de octava y cantidad de notas activas.
-- **NoteGrid** — organiza las notas por octava y renderiza un `NoteButton` por cada nota.
-- **NoteButton** — boton toggle con tres estados visuales: no seleccionado, seleccionado y seleccionado + reproduciendo (con animacion de pulso).
-- **Controls** — selector de instrumento, Play/Stop, slider de volumen, selector de octava y control de velocidad.
-
-### Estado (Zustand)
-
-Store centralizado (`useShrutiStore.js`) con estado reactivo:
-
-| Estado          | Tipo       | Descripcion                          |
-| --------------- | ---------- | ------------------------------------ |
-| `initialized`   | `boolean`  | Audio context listo                  |
-| `mode`          | `string`   | `'1oct'` o `'3oct'`                  |
-| `instrumentId`  | `string`   | ID del instrumento activo            |
-| `selectedNotes` | `string[]` | IDs de notas activas                 |
-| `playing`       | `boolean`  | Drone activo                         |
-| `volume`        | `number`   | Volumen maestro (0-1)                |
-| `octave`        | `number`   | Octava del teclado (3, 4 o 5)       |
-| `speed`         | `number`   | Multiplicador de envelope (0.25-3)   |
-
-Acciones: `init(mode)`, `setInstrument(id)`, `toggleNote(noteId)`, `togglePlay()`, `setVolume()`, `setOctave()`, `setSpeed()`, `reset()`.
-
-### Audio (Tone.js)
-
-La capa de audio ofrece multiples motores intercambiables a traves del proxy mutable `audioEngine.js`:
-
-- **Base Sound** (`AudioManager`) — sintesis con `PolySynth` y oscilador `fatsine`. Genera el sonido en tiempo real sin archivos externos.
-- **Shrutibox Prototype** (`SampleAudioManager`) — reproduce archivos MP3 pregrabados con `Tone.Player` en loop continuo. Los samples se generan desde un WAV fuente con `scripts/generate-samples.sh`.
-
-Todos los motores exponen la misma interfaz (`playNote`, `stopNote`, `setVolume`, etc.) y se enrutan a un nodo `Tone.Volume` maestro (-6dB). El registro de instrumentos (`instruments.js`) define los motores disponibles, y el usuario los selecciona desde la UI en tiempo real. Agregar un nuevo instrumento requiere solo crear su motor y registrarlo.
 
 > Para documentacion detallada de la arquitectura, ver [`docs/architecture.md`](docs/architecture.md).
 
@@ -183,17 +155,33 @@ npm run build
 
 ## Generar samples de audio
 
-Para que el instrumento "Shrutibox Prototype" funcione, primero hay que generar los 22 archivos MP3:
+Los instrumentos basados en samples requieren generar archivos MP3 antes de usarlos. Ambos scripts necesitan **ffmpeg** instalado.
+
+### Shrutibox Prototype (samples interpolados)
 
 ```bash
 bash scripts/generate-samples.sh
 ```
 
-Esto toma `public/original-sounds/95345__iluppai__shruti-box.wav` (grabacion de shrutibox en C3) y genera cada nota por pitch-shifting con ffmpeg. Los archivos se crean en `public/sounds/octave_3/`, `octave_4/` y `octave_5/`.
+Toma `public/original-sounds/95345__iluppai__shruti-box.wav` y genera las 13 notas cromaticas por pitch-shifting. Los archivos se crean en `public/sounds/`.
 
-Una vez generados, el instrumento aparece en el selector de la UI y puede seleccionarse en cualquier momento.
+### Shrutibox MKS (samples reales)
 
-> Los archivos generados estan en `.gitignore` porque son reproducibles con el script. El WAV fuente si se versiona.
+```bash
+bash scripts/generate-mks-samples.sh
+```
+
+Toma las 13 grabaciones individuales de `public/original-sounds/shrutibox-MKS-first-samplers/` (7 shuddh + 4 komal + 1 tivra + Sa agudo) y las convierte a MP3. Los archivos se crean en `public/sounds-mks/`.
+
+### MKS Crossfade (samples con crossfade baked-in)
+
+```bash
+bash scripts/generate-mks-xfade-samples.sh
+```
+
+Toma los samples MKS y genera versiones con crossfade integrado en el audio: la cola del sample se mezcla con el inicio para que el loop sea suave. Los archivos se crean en `public/sounds-mks-xfade/`.
+
+> Los archivos generados estan en `.gitignore` porque son reproducibles con los scripts. Los WAV fuente si se versionan.
 
 ## Otros comandos
 
@@ -205,139 +193,105 @@ Una vez generados, el instrumento aparece en el selector de la UI y puede selecc
 
 ## Uso del instrumento
 
-1. **Seleccionar modo**: al abrir la app, elige "1 Octava" o "3 Octavas"
-2. **Elegir instrumento**: selecciona el sonido deseado (Base Sound, Shrutibox Prototype, etc.)
-3. **Activar notas**: haz click en las notas que deseas escuchar (se marcan como seleccionadas)
+1. **Iniciar**: al abrir la app, presiona "Iniciar" para activar el audio
+2. **Elegir instrumento**: selecciona el sonido deseado (Base Sound, Shrutibox Prototype, Shrutibox MKS, MKS Crossfade, MKS Grain)
+3. **Activar notas**: haz click en las lengüetas que deseas escuchar (se marcan como seleccionadas)
 4. **Reproducir**: presiona el boton Play (o barra espaciadora) para iniciar el drone
 5. **Modificar en vivo**: mientras suena, puedes cambiar instrumento, activar o desactivar notas
 6. **Detener**: presiona Stop (o barra espaciadora) para silenciar (las notas quedan seleccionadas)
 
-### Atajos de teclado
+### Atajos de teclado (estilo piano)
 
-| Tecla   | Accion     |
-| ------- | ---------- |
-| A       | Sa         |
-| S       | Re         |
-| D       | Ga         |
-| F       | Ma         |
-| G       | Pa         |
-| H       | Dha        |
-| J       | Ni         |
-| Espacio | Play/Stop  |
+**Fila inferior (notas shuddh / naturales):**
 
-En modo 3 octavas, el selector de octava determina a que octava se aplican las teclas.
+| Tecla | Nota    |
+| ----- | ------- |
+| A     | Sa      |
+| S     | Re      |
+| D     | Ga      |
+| F     | Ma      |
+| G     | Pa      |
+| H     | Dha     |
+| J     | Ni      |
+| K     | Sa (alto) |
 
-## Mapa de notas (sistema Sargam)
+**Fila superior (notas komal / tivra):**
+
+| Tecla | Nota       |
+| ----- | ---------- |
+| W     | Re komal   |
+| E     | Ga komal   |
+| T     | Ma tivra   |
+| Y     | Dha komal  |
+| U     | Ni komal   |
+
+| Tecla   | Accion    |
+| ------- | --------- |
+| Espacio | Play/Stop |
+
+## Mapa de notas (sistema Sargam cromatico)
 
 ```
-Octava 3 (Mandra ×0.5)   Octava 4 (Madhya ×1.0)   Octava 5 (Tara ×2.0)
-┌──┬──┬──┬──┬──┬───┬──┐  ┌──┬──┬──┬──┬──┬───┬──┐  ┌──┬──┬──┬──┬──┬───┬──┐  ┌──┐
-│Sa│Re│Ga│Ma│Pa│Dha│Ni│  │Sa│Re│Ga│Ma│Pa│Dha│Ni│  │Sa│Re│Ga│Ma│Pa│Dha│Ni│  │Sa│
-│C3│D3│E3│F3│G3│A3 │B3│  │C4│D4│E4│F4│G4│A4 │B4│  │C5│D5│E5│F5│G5│A5 │B5│  │C6│
-└──┴──┴──┴──┴──┴───┴──┘  └──┴──┴──┴──┴──┴───┴──┘  └──┴──┴──┴──┴──┴───┴──┘  └──┘
-         7 notas                   7 notas                   7 notas         Sa_6
+┌──┬───┬──┬───┬──┬──┬───┬──┬───┬───┬───┬──┬──┐
+│Sa│Re♭│Re│Ga♭│Ga│Ma│Ma♯│Pa│Dha♭│Dha│Ni♭│Ni│Sa│
+│C3│Db3│D3│Eb3│E3│F3│F#3│G3│Ab3 │A3 │Bb3│B3│C4│
+└──┴───┴──┴───┴──┴──┴───┴──┴───┴───┴───┴──┴──┘
+ S    K   S    K   S   S    T   S    K    S    K   S   S
 ```
 
-- **Modo 1 octava**: solo octava 3 (7 notas).
-- **Modo 3 octavas**: octavas 3, 4, 5 + Sa_6 (22 notas).
+S = shuddh (natural), K = komal (bemol), T = tivra (sostenido)
 
 ## Feature flags
 
 `src/config/featureFlags.js` permite activar/desactivar funcionalidades:
 
-| Flag                  | Descripcion                                      |
-| --------------------- | ------------------------------------------------ |
-| keyboard              | Soporte de teclado fisico                        |
-| octaveSelector        | Selector de octava (modo 3 oct)                  |
-| speedControl          | Control de velocidad del envelope                |
-| mobileLayout          | Layout optimizado para movil                     |
-| instrumentSelector    | Selector de instrumento en la UI                 |
+| Flag                  | Default | Descripcion                                      |
+| --------------------- | ------- | ------------------------------------------------ |
+| keyboard              | on      | Soporte de teclado fisico                        |
+| speedControl          | off     | Control de velocidad del envelope (desactivado)  |
+| mobileLayout          | on      | Layout optimizado para movil                     |
+| instrumentSelector    | on      | Selector de instrumento en la UI                 |
 
-## Diagramas de flujo
+## Estrategia de audio para loop continuo
 
-### Inicio de la aplicacion
+Al reproducir samples pregrabados en loop, se produce un **click audible** en el punto donde el loop salta del final al inicio, porque la forma de onda tiene una discontinuidad abrupta en ese corte.
 
-```mermaid
-flowchart TD
-    A[App carga] --> B[StartScreen]
-    B --> C{Usuario elige modo}
-    C -->|1 Octava| D["init('1oct')"]
-    C -->|3 Octavas| E["init('3oct')"]
-    D --> F[Inicializar audioEngine]
-    E --> F
-    F --> G["Guardar mode en store"]
-    G --> H[Renderizar ShrutiboxApp]
-    H --> I{mode?}
-    I -->|1oct| J["NoteGrid: solo octava 3"]
-    I -->|3oct| K["NoteGrid: octavas 3, 4, 5 + Sa superior"]
+### El problema: single player con loop built-in
+
+```
+               click!
+                 │
+Player:  [=======▼=======]──loop──►[=======▼=======]──loop──►...
+         ^               ^         ^
+         loopStart      loopEnd    loopStart (salto abrupto)
 ```
 
-### Interaccion con notas
+El player reproduce de `loopStart` a `loopEnd` y salta al inicio. En ese salto, la forma de onda se corta abruptamente, generando un click audible cada vez que el loop reinicia.
 
-```mermaid
-flowchart TD
-    A["Click en nota / Tecla"] --> B["toggleNote(noteId)"]
-    B --> C{Nota en selectedNotes?}
-    C -->|No - Activar| D["Agregar a selectedNotes"]
-    C -->|Si - Desactivar| E["Quitar de selectedNotes"]
-    D --> F{playing === true?}
-    E --> G{playing === true?}
-    F -->|Si| H["audioEngine.playNote(noteId)"]
-    F -->|No| I[Solo actualizar visual]
-    G -->|Si| J["audioEngine.stopNote(noteId)"]
-    G -->|No| K[Solo actualizar visual]
+### La solucion: dual player con crossfade
+
+```
+Player A:  [====1s========~21s]───fade out───(dispose)
+                               │
+Player B:            [====1s========~21s]───fade out───(dispose)
+                     │                   │
+                  arranca con          Player C: [====1s====...
+                  fade-in              arranca con fade-in
 ```
 
-### Boton Play/Stop
+En lugar de usar el loop built-in, se ejecutan **dos players que se alternan**:
 
-```mermaid
-flowchart TD
-    A["Click Play/Stop o Barra espaciadora"] --> B["togglePlay()"]
-    B --> C{playing actual?}
-    C -->|false - Iniciar| D["playing = true"]
-    D --> E["audioEngine.playNotes(selectedNotes)"]
-    E --> F[Todas las notas seleccionadas suenan]
-    C -->|true - Detener| G["playing = false"]
-    G --> H["audioEngine.stopAll()"]
-    H --> I["Notas quedan seleccionadas sin sonar"]
-```
+1. **Player A** arranca desde `loopStart` y reproduce sin loop
+2. Antes de que A llegue a `loopEnd`, se crea **Player B** desde `loopStart`
+3. Durante `crossfadeDuration` segundos, A hace fade-out y B hace fade-in
+4. Cuando A termina el fade, se destruye
+5. Antes de que B llegue a `loopEnd`, se crea **Player C** y se repite
 
-### Arquitectura general
+El audio nunca alcanza el punto de corte, eliminando completamente el click de loop.
 
-```mermaid
-flowchart LR
-    subgraph ui [Interfaz]
-        StartScreen --> ShrutiboxApp
-        ShrutiboxApp --> Display
-        ShrutiboxApp --> NoteGrid
-        ShrutiboxApp --> Controls
-        NoteGrid --> NoteButton
-    end
-    subgraph state [Estado - Zustand]
-        mode
-        instrumentId
-        selectedNotes
-        playing
-        volume
-        speed
-    end
-    subgraph audio [Audio - Tone.js]
-        audioEngine["audioEngine (proxy)"]
-        instruments["instruments.js"]
-        AudioManager["Base Sound"]
-        SampleAudioManager["Shrutibox Prototype"]
-    end
-    NoteButton -->|toggleNote| selectedNotes
-    Controls -->|setInstrument| instrumentId
-    Controls -->|togglePlay| playing
-    instrumentId --> audioEngine
-    selectedNotes --> audioEngine
-    playing --> audioEngine
-    instruments --> AudioManager
-    instruments --> SampleAudioManager
-    audioEngine --> AudioManager
-    audioEngine --> SampleAudioManager
-```
+Esta tecnica esta implementada en `GrainAudioManager.js` para el instrumento **MKS Grain**.
+
+> Para documentacion detallada de las mejoras de audio, ver [`docs/audio-improvements.md`](docs/audio-improvements.md).
 
 ## Documentacion
 
@@ -345,3 +299,4 @@ flowchart LR
 | ------------------------------------------------ | ---------------------------------------------- |
 | [`docs/getting-started.md`](docs/getting-started.md) | Guia de inicio rapido paso a paso              |
 | [`docs/architecture.md`](docs/architecture.md)       | Arquitectura detallada con diagramas y flujos  |
+| [`docs/audio-improvements.md`](docs/audio-improvements.md) | Mejoras de audio: clicks, crossfade, dual player |

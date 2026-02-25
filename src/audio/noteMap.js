@@ -1,98 +1,65 @@
 /**
- * @fileoverview Mapa de notas del Shrutibox Digital.
+ * @fileoverview Mapa de notas cromaticas del Shrutibox Digital.
  *
- * Define las 7 notas del sistema Sargam (Sa, Re, Ga, Ma, Pa, Dha, Ni)
- * y las mapea a frecuencias occidentales con afinacion A=440Hz.
- * Las octavas usan notacion cientifica estandar: 3 (Mandra/baja),
- * 4 (Madhya/media), 5 (Tara/alta).
+ * Define las 13 notas de una octava completa del sistema Sargam:
+ * 7 shuddh (naturales) + 4 komal (bemol) + 1 tivra (sostenido) + Sa agudo.
+ * Frecuencias basadas en afinacion A=440Hz, octava 3.
  */
 
 /**
- * Notas base del sistema Sargam con su equivalente occidental y frecuencia
- * fundamental en la octava 4 (Madhya Saptak, octava media).
- * @type {Array<{name: string, western: string, baseFrequency: number}>}
+ * Las 13 notas cromaticas en orden ascendente.
+ * @type {Array<{id: string, name: string, variant: string, western: string, frequency: number, fileKey: string}>}
  */
-const SARGAM_NOTES = [
-  { name: 'Sa', western: 'C', baseFrequency: 261.63 },
-  { name: 'Re', western: 'D', baseFrequency: 293.66 },
-  { name: 'Ga', western: 'E', baseFrequency: 329.63 },
-  { name: 'Ma', western: 'F', baseFrequency: 349.23 },
-  { name: 'Pa', western: 'G', baseFrequency: 392.00 },
-  { name: 'Dha', western: 'A', baseFrequency: 440.00 },
-  { name: 'Ni', western: 'B', baseFrequency: 493.88 },
+const CHROMATIC_NOTES = [
+  { id: 'sa',        name: 'Sa',  variant: 'shuddh', western: 'C3',  frequency: 130.81, fileKey: 'sa' },
+  { id: 're_komal',  name: 'Re',  variant: 'komal',  western: 'Db3', frequency: 138.59, fileKey: 're_komal' },
+  { id: 're',        name: 'Re',  variant: 'shuddh', western: 'D3',  frequency: 146.83, fileKey: 're' },
+  { id: 'ga_komal',  name: 'Ga',  variant: 'komal',  western: 'Eb3', frequency: 155.56, fileKey: 'ga_komal' },
+  { id: 'ga',        name: 'Ga',  variant: 'shuddh', western: 'E3',  frequency: 164.81, fileKey: 'ga' },
+  { id: 'ma',        name: 'Ma',  variant: 'shuddh', western: 'F3',  frequency: 174.61, fileKey: 'ma' },
+  { id: 'ma_tivra',  name: 'Ma',  variant: 'tivra',  western: 'F#3', frequency: 185.00, fileKey: 'ma_tivra' },
+  { id: 'pa',        name: 'Pa',  variant: 'shuddh', western: 'G3',  frequency: 196.00, fileKey: 'pa' },
+  { id: 'dha_komal', name: 'Dha', variant: 'komal',  western: 'Ab3', frequency: 207.65, fileKey: 'dha_komal' },
+  { id: 'dha',       name: 'Dha', variant: 'shuddh', western: 'A3',  frequency: 220.00, fileKey: 'dha' },
+  { id: 'ni_komal',  name: 'Ni',  variant: 'komal',  western: 'Bb3', frequency: 233.08, fileKey: 'ni_komal' },
+  { id: 'ni',        name: 'Ni',  variant: 'shuddh', western: 'B3',  frequency: 246.94, fileKey: 'ni' },
+  { id: 'sa_high',   name: 'Sa',  variant: 'shuddh', western: 'C4',  frequency: 261.63, fileKey: 'sa_high' },
 ];
 
-/**
- * Multiplicadores de frecuencia por octava, relativos a la octava 4 (base).
- * - Octava 3 (Mandra): frecuencia base * 0.5
- * - Octava 4 (Madhya): frecuencia base * 1
- * - Octava 5 (Tara):   frecuencia base * 2
- * @type {Record<number, number>}
- */
-const OCTAVE_MULTIPLIERS = { 3: 0.5, 4: 1, 5: 2 };
-
-/**
- * Genera el mapa completo de notas para las 3 octavas (3, 4, 5)
- * mas el Sa superior (octava 6) como nota de cierre.
- * @returns {Array<{id: string, name: string, western: string, octave: number, frequency: number, file: string}>}
- */
-function buildNoteMap() {
-  const notes = [];
-
-  for (const octave of [3, 4, 5]) {
-    const multiplier = OCTAVE_MULTIPLIERS[octave];
-    for (const note of SARGAM_NOTES) {
-      notes.push({
-        id: `${note.name.toLowerCase()}_${octave}`,
-        name: note.name,
-        western: note.western,
-        octave,
-        frequency: +(note.baseFrequency * multiplier).toFixed(2),
-        file: `/sounds/octave_${octave}/${note.name.toLowerCase()}.mp3`,
-      });
-    }
-  }
-
-  notes.push({
-    id: 'sa_6',
-    name: 'Sa',
-    western: 'C',
-    octave: 6,
-    frequency: +(261.63 * 4).toFixed(2),
-    file: '/sounds/octave_5/sa_high.mp3',
-  });
-
-  return notes;
-}
-
-/** Lista completa de notas del instrumento (21 notas + Sa superior). */
-export const NOTES = buildNoteMap();
+/** Lista completa de notas del instrumento (13 notas cromaticas). */
+export const NOTES = CHROMATIC_NOTES;
 
 /** Diccionario de notas indexado por id para busqueda O(1). */
 export const NOTES_BY_ID = Object.fromEntries(NOTES.map((n) => [n.id, n]));
 
 /**
- * Mapeo de teclas del teclado fisico a indice de nota dentro de una octava.
- * A=Sa(0), S=Re(1), D=Ga(2), F=Ma(3), G=Pa(4), H=Dha(5), J=Ni(6).
- * @type {Record<string, number>}
+ * Mapeo de teclas del teclado fisico a id de nota, estilo piano:
+ * - Fila inferior (shuddh): A S D F G H J K
+ * - Fila superior (komal/tivra): W E T Y U
+ * @type {Record<string, string>}
  */
 export const KEYBOARD_MAP = {
-  a: 0,
-  s: 1,
-  d: 2,
-  f: 3,
-  g: 4,
-  h: 5,
-  j: 6,
+  a: 'sa',
+  w: 're_komal',
+  s: 're',
+  e: 'ga_komal',
+  d: 'ga',
+  f: 'ma',
+  t: 'ma_tivra',
+  g: 'pa',
+  y: 'dha_komal',
+  h: 'dha',
+  u: 'ni_komal',
+  j: 'ni',
+  k: 'sa_high',
 };
 
 /**
- * Filtra y devuelve las notas correspondientes a una octava especifica.
- * @param {number} octave - Numero de octava (3, 4 o 5)
- * @returns {Array} Notas de esa octava
+ * Mapeo inverso: de noteId a tecla, para mostrar labels en la UI.
+ * @type {Record<string, string>}
  */
-export function getNotesForOctave(octave) {
-  return NOTES.filter((n) => n.octave === octave);
-}
+export const KEY_LABELS = Object.fromEntries(
+  Object.entries(KEYBOARD_MAP).map(([key, noteId]) => [noteId, key.toUpperCase()])
+);
 
-export { SARGAM_NOTES, OCTAVE_MULTIPLIERS };
+export { CHROMATIC_NOTES };

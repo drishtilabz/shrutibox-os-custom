@@ -2,17 +2,17 @@
  * @fileoverview Store global del Shrutibox Digital (Zustand).
  *
  * Gestiona el estado completo de la aplicacion:
- * - Inicializacion y modo seleccionado (1 o 3 octavas)
+ * - Inicializacion del audio
  * - Instrumento activo (seleccion de motor de audio)
  * - Notas seleccionadas (toggle on/off)
  * - Estado de reproduccion (playing/stopped)
- * - Controles de audio (volumen, octava activa, velocidad)
+ * - Controles de audio (volumen, velocidad)
  *
  * Flujo principal:
- * 1. Usuario selecciona notas con toggleNote() (sin sonido aun)
- * 2. Usuario activa reproduccion con togglePlay()
- * 3. Todas las notas seleccionadas comienzan a sonar
- * 4. Mientras suena, se pueden agregar/quitar notas en tiempo real
+ * 1. Usuario inicia el audio (requerido por el navegador)
+ * 2. Selecciona notas con toggleNote() (sin sonido aun)
+ * 3. Activa reproduccion con togglePlay()
+ * 4. Mientras suena, puede agregar/quitar notas en tiempo real
  * 5. togglePlay() de nuevo detiene el sonido (notas quedan seleccionadas)
  */
 
@@ -23,9 +23,6 @@ import { INSTRUMENTS_BY_ID, DEFAULT_INSTRUMENT_ID } from '../audio/instruments';
 const useShrutiStore = create((set, get) => ({
   /** @type {boolean} true una vez que el audio esta inicializado. */
   initialized: false,
-
-  /** @type {'1oct'|'3oct'|null} Modo de octavas seleccionado. */
-  mode: null,
 
   /** @type {string} ID del instrumento activo. */
   instrumentId: DEFAULT_INSTRUMENT_ID,
@@ -39,23 +36,20 @@ const useShrutiStore = create((set, get) => ({
   /** @type {number} Volumen maestro entre 0 y 1. */
   volume: 0.7,
 
-  /** @type {number} Octava activa para el teclado fisico (3, 4 o 5). */
-  octave: 3,
-
   /** @type {number} Multiplicador de velocidad del envelope. */
   speed: 1.0,
 
   /**
-   * Inicializa el motor de audio del instrumento activo y establece el modo.
-   * @param {'1oct'|'3oct'} mode - Modo seleccionado por el usuario
+   * Inicializa el motor de audio del instrumento activo.
+   * Debe llamarse tras una interaccion del usuario (requisito del navegador).
    */
-  init: async (mode) => {
+  init: async () => {
     const { instrumentId, volume } = get();
     const instrument = INSTRUMENTS_BY_ID[instrumentId];
     await instrument.engine.init();
     audioEngine.setEngine(instrument.engine);
     audioEngine.setVolume(volume);
-    set({ initialized: true, mode });
+    set({ initialized: true });
   },
 
   /**
@@ -87,9 +81,8 @@ const useShrutiStore = create((set, get) => ({
 
   /**
    * Alterna la seleccion de una nota (toggle on/off).
-   * Si el drone esta activo (playing=true), tambien inicia o detiene
-   * el sonido de esa nota en tiempo real.
-   * @param {string} noteId - ID de la nota (ej: 'sa_3')
+   * Si el drone esta activo, tambien inicia o detiene el sonido en tiempo real.
+   * @param {string} noteId - ID de la nota (ej: 'sa', 're_komal')
    */
   toggleNote: (noteId) => {
     const { selectedNotes, playing } = get();
@@ -137,12 +130,6 @@ const useShrutiStore = create((set, get) => ({
   },
 
   /**
-   * Cambia la octava activa para el teclado fisico.
-   * @param {number} octave - Numero de octava (3, 4 o 5)
-   */
-  setOctave: (octave) => set({ octave }),
-
-  /**
    * Ajusta la velocidad del envelope (attack/release).
    * @param {number} speed - Multiplicador (0.25 a 3)
    */
@@ -152,7 +139,7 @@ const useShrutiStore = create((set, get) => ({
   },
 
   /**
-   * Detiene el audio y vuelve al menu de seleccion de modo.
+   * Detiene el audio y vuelve a la pantalla de inicio.
    */
   reset: () => {
     const { playing } = get();
@@ -161,11 +148,9 @@ const useShrutiStore = create((set, get) => ({
     }
     set({
       initialized: false,
-      mode: null,
       instrumentId: DEFAULT_INSTRUMENT_ID,
       selectedNotes: [],
       playing: false,
-      octave: 3,
       speed: 1.0,
     });
   },
