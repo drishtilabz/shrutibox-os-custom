@@ -12,6 +12,7 @@
 import audioManager from './AudioManager';
 import SampleAudioManager from './SampleAudioManager';
 import GrainAudioManager from './GrainAudioManager';
+import RealisticGrainAudioManager from './RealisticGrainAudioManager';
 
 /*
  * Instrumentos ocultos — listos para futuras implementacion o deprecacion.
@@ -26,6 +27,7 @@ import GrainAudioManager from './GrainAudioManager';
 
 const mksSampleAudioManager = new SampleAudioManager('/sounds-mks');
 const mksGrainManager = new GrainAudioManager('/sounds-mks');
+const mksRealisticManager = new RealisticGrainAudioManager('/sounds-mks');
 
 /**
  * Lista ordenada de instrumentos disponibles.
@@ -35,6 +37,7 @@ const mksGrainManager = new GrainAudioManager('/sounds-mks');
 export const INSTRUMENTS = [
   { id: 'shrutibox-mks', name: 'Shrutibox MKS', engine: mksSampleAudioManager },
   { id: 'mks-grain', name: 'MKS Grain', engine: mksGrainManager },
+  { id: 'mks-realistic', name: 'Shrutibox MKS Realistic', engine: mksRealisticManager },
 ];
 
 /** ID del instrumento por defecto al iniciar la aplicacion. */
