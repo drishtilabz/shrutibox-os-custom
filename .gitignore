@@ -24,8 +24,3 @@ dist-ssr
 *.sw?
 
 .env
-
-# Audio generado (reproducible con scripts/)
-public/sounds/
-public/sounds-mks/
-public/sounds-mks-xfade/
