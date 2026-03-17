@@ -115,6 +115,72 @@ El efecto realista (bellows stagger + fade-in escalado) aplica **unicamente al
 onset inicial**. Los ciclos de sostenimiento producen un drone constante y fluido,
 replicando a un buen ejecutor de shrutibox que mantiene el flujo de aire estable.
 
+## Bellows Release (apagado escalonado)
+
+El motor implementa tambien el efecto espejo al detener el drone (boton stop o
+cambio de instrumento): las lengüetas agudas dejan de vibrar primero y las
+graves se apagan con un retraso progresivo, replicando el vaciado natural del
+fuelle donde la presion de aire cae y las lenguetas pequeñas (de mayor rigidez)
+son las primeras en detenerse.
+
+### 1. Delay escalonado inverso (`stopNotes`)
+
+Al detener multiples notas, el motor:
+
+- Ordena las notas seleccionadas de agudo a grave por su indice cromatico.
+- La nota mas aguda inicia su fade-out inmediatamente.
+- Cada nota sucesiva recibe un delay calculado como:
+  `delay = (semitonos_desde_la_mas_aguda) * msPerSemitone`
+
+Ejemplo con Sa (semitono 0) y Pa (semitono 7) a 90 ms/semitono:
+- Pa inicia el fade-out al instante (0 ms).
+- Sa inicia el fade-out a los 630 ms.
+
+### 2. Fade-out escalado por pitch (`_scaledFadeOut`)
+
+El fade-out de cada nota se escala con la posicion cromatica invertida, de modo
+que las notas graves (mayor inercia mecanica de la lengueta) se apagan mas
+lentamente:
+
+```
+fadeOut = initialFadeIn * (1 + (12 - indiceCromatico) * fadeInScalePerSemitone)
+```
+
+Ejemplo con `fadeInScalePerSemitone = 0.04`:
+- Sa alto (indice 12): 2.5 s * 1.00 = 2.50 s
+- Pa (indice 7):        2.5 s * 1.20 = 3.00 s
+- Sa grave (indice 0):  2.5 s * 1.48 = 3.70 s
+
+### Timeline completo: onset + release
+
+```
+ONSET (Play) — grave a agudo:        RELEASE (Stop) — agudo a grave:
+
+Sa  ░░▒▒▓▓████████████████           Sa  ████████████████████▓▓▒▒░░
+     |                                                    | delay 630ms
+     t=0                                                  t=630ms → fade 3.7s
+
+Pa     ░░▒▒▓▓████████████            Pa  ████████████▓▓▓▒▒░░
+       |                                  |
+       t=630ms                            t=0 → fade 3.0s
+```
+
+### Interaccion con el bellows onset
+
+Si el usuario presiona Play mientras un release escalonado esta en curso:
+- `playNote()` cancela el stop pendiente de esa nota individual.
+- `playNotes()` cancela todos los stops pendientes antes de iniciar el nuevo onset.
+
+Esto garantiza que un Play rapido despues de Stop no deje timeouts huerfanos.
+
+### Alcance del efecto
+
+| Accion | Comportamiento |
+|--------|---------------|
+| Boton Stop (todas las notas) | Release escalonado agudo → grave |
+| Cambio de instrumento | Release escalonado agudo → grave |
+| Deseleccionar una nota individual | Fade-out rapido (80 ms), sin escalonado |
+
 ## Parametros configurables
 
 | Parametro | Default | Descripcion |
@@ -123,8 +189,8 @@ replicando a un buen ejecutor de shrutibox que mantiene el flujo de aire estable
 | `crossfadeDuration` | 4.0 | Duracion del fade-in del nuevo player en cada ciclo (segundos) |
 | `fadeOutDelay` | 3.0 | Segundos que el viejo player espera antes de iniciar su fade-out, para que el nuevo suba primero |
 | `fadeOutDuration` | 2.0 | Duracion del fade-out del viejo player una vez iniciado (segundos) |
-| `bellows.msPerSemitone` | 90 | Milisegundos de delay por cada semitono de distancia desde la nota mas grave activa |
-| `bellows.fadeInScalePerSemitone` | 0.04 | Factor multiplicador adicional del `initialFadeIn` por semitono (+4% por semitono) |
+| `bellows.msPerSemitone` | 90 | Milisegundos de delay por cada semitono de distancia. Aplica tanto al onset (grave→agudo) como al release (agudo→grave) |
+| `bellows.fadeInScalePerSemitone` | 0.04 | Factor multiplicador adicional por semitono (+4% por semitono). Aplica al fade-in del onset (escala hacia agudos) y al fade-out del release (escala hacia graves, con indice invertido) |
 
 Se pasan como opciones al constructor:
 
@@ -143,21 +209,28 @@ new RealisticGrainAudioManager('/sounds-mks', {
 
 ## Limpieza de timeouts
 
-El bellows stagger usa `setTimeout` para arrancar las notas con delay. Si el
-usuario detiene el drone antes de que todas las notas hayan arrancado, los
-timeouts pendientes se cancelan automaticamente:
+El bellows stagger y el bellows release usan `setTimeout` para arrancar y detener
+las notas con delay. Los timeouts se cancelan automaticamente en los siguientes casos:
 
-- `stopAll()` cancela **todos** los arranques pendientes.
+**Arranques pendientes (`pendingStarts`):**
+- `stopAll()` cancela **todos** los arranques pendientes antes del release.
 - `stopNote(noteId)` cancela el arranque pendiente de esa nota especifica.
-- Los IDs de los timeouts se almacenan en `this.pendingStarts` (un `Map<string, number>`).
+
+**Paradas pendientes (`pendingStops`):**
+- `playNote(noteId)` cancela la parada pendiente de esa nota (re-play durante release).
+- `playNotes()` cancela **todas** las paradas pendientes antes del nuevo onset.
+- `dispose()` cancela todos los pendingStops restantes.
+
+Los IDs de los timeouts se almacenan en `this.pendingStarts` y `this.pendingStops`
+(ambos `Map<string, number>`).
 
 ## Diferencia con los otros motores
 
-| Motor | Base | Loop | Onset |
-|-------|------|------|-------|
-| `SampleAudioManager` | Tone.Player | Loop built-in con fadeIn/fadeOut | Todas las notas simultaneas |
-| `GrainAudioManager` | Tone.GrainPlayer | Dual player cycling con crossfade simultaneo | Todas las notas simultaneas, initialFadeIn uniforme |
-| `RealisticGrainAudioManager` | Tone.GrainPlayer | Dual player cycling con crossfade escalonado (fadeOutDelay) desde cycleStart | Bellows stagger solo al onset + cycling seamless con arranque anticipado del nuevo player |
+| Motor | Base | Loop | Onset | Release |
+|-------|------|------|-------|---------|
+| `SampleAudioManager` | Tone.Player | Loop built-in con fadeIn/fadeOut | Todas las notas simultaneas | Fade-out rapido uniforme |
+| `GrainAudioManager` | Tone.GrainPlayer | Dual player cycling con crossfade simultaneo | Todas las notas simultaneas, initialFadeIn uniforme | Fade-out rapido uniforme |
+| `RealisticGrainAudioManager` | Tone.GrainPlayer | Dual player cycling con crossfade escalonado (fadeOutDelay) desde cycleStart | Bellows stagger: grave→agudo con delay y fade-in escalado | Bellows release: agudo→grave con delay y fade-out escalado |
 
 ## Archivo
 

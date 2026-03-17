@@ -80,6 +80,8 @@ class RealisticGrainAudioManager {
     this.activePlayers = new Map();
     /** @type {Map<string, number>} noteId -> setTimeout ID para arranques pendientes */
     this.pendingStarts = new Map();
+    /** @type {Map<string, number>} noteId -> setTimeout ID para paradas pendientes (bellows release) */
+    this.pendingStops = new Map();
     this.volume = new Tone.Volume(-6).toDestination();
     this.fadeInTime = this.grainConfig.fadeIn;
     this.fadeOutTime = this.grainConfig.fadeOut;
@@ -200,6 +202,65 @@ class RealisticGrainAudioManager {
   }
 
   /**
+   * Calcula el fadeOut escalado para una nota segun su posicion cromatica.
+   * Espejo inverso de _scaledFadeIn: las notas graves reciben un fade-out mas
+   * largo, replicando la mayor inercia mecanica de las lenguetas grandes.
+   * @param {string} noteId
+   * @returns {number} Duracion del fade-out en segundos.
+   * @private
+   */
+  _scaledFadeOut(noteId) {
+    const idx = CHROMATIC_INDEX.get(noteId) ?? 0;
+    const invertedIdx = 12 - idx;
+    const scale = 1 + invertedIdx * this.bellowsConfig.fadeInScalePerSemitone;
+    return this.grainConfig.initialFadeIn * scale;
+  }
+
+  /**
+   * Detiene un player con fade-out gradual escalado por pitch (para el bellows
+   * release). A diferencia de _stopPlayer(), usa _scaledFadeOut() en lugar del
+   * fadeOutTime rapido de 80ms.
+   * @param {string} noteId
+   * @private
+   */
+  _stopPlayerGradual(noteId) {
+    const entry = this.activePlayers.get(noteId);
+    if (!entry) return;
+
+    const { player, gain, cycleTimer } = entry;
+    this.activePlayers.delete(noteId);
+    clearTimeout(cycleTimer);
+
+    const fadeOut = this._scaledFadeOut(noteId);
+    gain.gain.rampTo(0, fadeOut);
+    this._disposeAfter(player, gain, fadeOut + 0.2);
+  }
+
+  /**
+   * Cancela el timeout de parada pendiente de una nota, si existe.
+   * @param {string} noteId
+   * @private
+   */
+  _cancelPendingStop(noteId) {
+    const timerId = this.pendingStops.get(noteId);
+    if (timerId != null) {
+      clearTimeout(timerId);
+      this.pendingStops.delete(noteId);
+    }
+  }
+
+  /**
+   * Cancela todos los timeouts de parada pendientes del bellows release.
+   * @private
+   */
+  _cancelAllPendingStops() {
+    for (const timerId of this.pendingStops.values()) {
+      clearTimeout(timerId);
+    }
+    this.pendingStops.clear();
+  }
+
+  /**
    * Inicia la reproduccion granular de una nota con dual player cycling.
    * El fade-in inicial se escala segun la posicion cromatica de la nota:
    * notas mas agudas alcanzan volumen pleno un poco mas tarde.
@@ -216,6 +277,7 @@ class RealisticGrainAudioManager {
     }
 
     this._cancelPendingStart(noteId);
+    this._cancelPendingStop(noteId);
 
     const loopEnd = this.grainConfig.loopEnd != null
       ? Math.min(this.grainConfig.loopEnd, buffer.duration - 0.1)
@@ -249,6 +311,47 @@ class RealisticGrainAudioManager {
   }
 
   /**
+   * Detiene multiples notas con bellows release: espejo del bellows stagger del
+   * onset. Ordena las notas de agudo a grave y aplica un delay progresivo desde
+   * la nota mas aguda, replicando el vaciado natural del fuelle donde las
+   * lenguetas pequenas (agudas) dejan de vibrar primero al bajar la presion.
+   *
+   * Cada nota recibe un fade-out gradual escalado por pitch (_scaledFadeOut),
+   * de modo que las lenguetas graves, con mayor inercia, se apagan mas
+   * lentamente.
+   *
+   * @param {string[]} noteIds
+   */
+  stopNotes(noteIds) {
+    if (!noteIds.length) return;
+
+    this._cancelAllPendingStarts();
+
+    const sorted = [...noteIds].sort((a, b) => {
+      const idxA = CHROMATIC_INDEX.get(a) ?? 0;
+      const idxB = CHROMATIC_INDEX.get(b) ?? 0;
+      return idxB - idxA;
+    });
+
+    const highestIdx = CHROMATIC_INDEX.get(sorted[0]) ?? 0;
+
+    for (const noteId of sorted) {
+      const semitoneDistance = highestIdx - (CHROMATIC_INDEX.get(noteId) ?? 0);
+      const delayMs = semitoneDistance * this.bellowsConfig.msPerSemitone;
+
+      if (delayMs === 0) {
+        this._stopPlayerGradual(noteId);
+      } else {
+        const timerId = setTimeout(() => {
+          this.pendingStops.delete(noteId);
+          this._stopPlayerGradual(noteId);
+        }, delayMs);
+        this.pendingStops.set(noteId, timerId);
+      }
+    }
+  }
+
+  /**
    * Inicia la reproduccion de multiples notas con bellows stagger:
    * ordena las notas de grave a agudo y aplica un delay progresivo
    * basado en la distancia en semitonos desde la nota mas grave.
@@ -260,6 +363,8 @@ class RealisticGrainAudioManager {
    */
   playNotes(noteIds) {
     if (!noteIds.length) return;
+
+    this._cancelAllPendingStops();
 
     const sorted = [...noteIds].sort((a, b) => {
       const idxA = CHROMATIC_INDEX.get(a) ?? 0;
@@ -286,12 +391,14 @@ class RealisticGrainAudioManager {
   }
 
   /**
-   * Detiene y libera todos los players activos y cancela arranques pendientes.
+   * Detiene y libera todos los players activos con bellows release escalonado
+   * (agudo a grave). Cancela tambien cualquier arranque pendiente.
    */
   stopAll() {
     this._cancelAllPendingStarts();
-    for (const noteId of [...this.activePlayers.keys()]) {
-      this._stopPlayer(noteId);
+    const activeNoteIds = [...this.activePlayers.keys()];
+    if (activeNoteIds.length > 0) {
+      this.stopNotes(activeNoteIds);
     }
   }
 
@@ -356,6 +463,7 @@ class RealisticGrainAudioManager {
    */
   dispose() {
     this.stopAll();
+    this._cancelAllPendingStops();
     for (const { player, gain, cycleTimer } of this.activePlayers.values()) {
       clearTimeout(cycleTimer);
       player.dispose();
