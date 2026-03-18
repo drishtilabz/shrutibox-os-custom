@@ -5,6 +5,10 @@
  * y una instancia de motor de audio que implementa la interfaz estandar
  * (init, playNote, stopNote, playNotes, stopAll, setVolume, setSpeed, dispose).
  *
+ * Instrumentos activos:
+ * - MKS Drone      (id: mks-grain)     — GrainAudioManager, dual player cycling con crossfade 2s
+ * - MKS Realistic  (id: mks-realistic) — RealisticGrainAudioManager, bellows stagger 90ms/semitono
+ *
  * Para agregar un nuevo instrumento basta con importar su motor y anadir
  * una entrada al array INSTRUMENTS.
  */
@@ -19,13 +23,13 @@ import RealisticGrainAudioManager from './RealisticGrainAudioManager';
  *
  * const baseSoundManager = audioManager;           // Base Sound (sintesis PolySynth fatsine)
  * const sampleAudioManager = new SampleAudioManager('/sounds');  // Shrutibox Prototype (samples interpolados)
+ * const mksSampleAudioManager = new SampleAudioManager('/sounds-mks');  // Shrutibox MKS (Tone.Player loop)
  * const mksCrossfadeManager = new SampleAudioManager('/sounds-mks-xfade', {
  *   loopStart: 0,
  *   loopEnd: null,
  * });  // MKS Crossfade (samples con crossfade baked-in)
  */
 
-const mksSampleAudioManager = new SampleAudioManager('/sounds-mks');
 const mksGrainManager = new GrainAudioManager('/sounds-mks');
 const mksRealisticManager = new RealisticGrainAudioManager('/sounds-mks');
 
@@ -35,13 +39,12 @@ const mksRealisticManager = new RealisticGrainAudioManager('/sounds-mks');
  * @type {Array<{id: string, name: string, engine: object}>}
  */
 export const INSTRUMENTS = [
-  { id: 'shrutibox-mks', name: 'Shrutibox MKS', engine: mksSampleAudioManager },
-  { id: 'mks-grain', name: 'MKS Grain', engine: mksGrainManager },
-  { id: 'mks-realistic', name: 'Shrutibox MKS Realistic', engine: mksRealisticManager },
+  { id: 'mks-grain', name: 'MKS Drone', engine: mksGrainManager },
+  { id: 'mks-realistic', name: 'MKS Realistic', engine: mksRealisticManager },
 ];
 
 /** ID del instrumento por defecto al iniciar la aplicacion. */
-export const DEFAULT_INSTRUMENT_ID = 'shrutibox-mks';
+export const DEFAULT_INSTRUMENT_ID = 'mks-grain';
 
 /** Diccionario de instrumentos indexado por id para busqueda O(1). */
 export const INSTRUMENTS_BY_ID = Object.fromEntries(

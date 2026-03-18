@@ -36,7 +36,7 @@ El motor usa `SampleAudioManager` con `loopStart: 0` y `loopEnd: null` (duracion
 1. El script ahora aplica un fade-in de 50ms al inicio del body (`afade=t=in:d=0.05`) para que el archivo arranque desde silencio.
 2. `SampleAudioManager.playNote()` inicia la reproduccion con un offset de 10ms (`player.start(undefined, 0.01)`) cuando `loopStart` es 0, para saltar el padding que el decoder MP3 introduce al inicio del archivo.
 
-### MKS Grain (dual player granular con crossfade)
+### MKS Drone (dual player granular con crossfade)
 
 **Enfoque**: reproduccion granular con ciclo manual de dos players alternados via crossfade programatico.
 
@@ -62,7 +62,7 @@ El audio **nunca alcanza el punto de loop problematico**, eliminando completamen
 
 Al iniciar una nota, se aplica un fade-in suave de 2.5 segundos (`initialFadeIn`) para una entrada gradual tipo drone. Los ciclos posteriores usan su propio crossfade sin este fade-in adicional.
 
-Usa los mismos samples originales MKS sin pre-procesamiento.
+Usa los mismos samples originales MKS sin pre-procesamiento. Esta tecnica es la base de los dos instrumentos activos: **MKS Drone** (`GrainAudioManager`) y **MKS Realistic** (`RealisticGrainAudioManager`), que la extiende con bellows stagger.
 
 **Ventajas**: no requiere archivos procesados, loop absolutamente transparente, sonido fiel al original, parametros ajustables.
 

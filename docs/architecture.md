@@ -22,15 +22,16 @@ Replica digital de un shrutibox Monoj Kumar Sardar 440Hz. Construida con React 1
 ```
 src/
 ├── main.jsx                      # Punto de entrada (monta <App />)
-├── App.jsx                       # Componente raiz (StartScreen / ShrutiboxApp)
+├── App.jsx                       # Componente raiz (StartScreen / ShrutiboxApp + footer)
 ├── index.css                     # Tailwind CSS + estilos del shrutibox
 │
 ├── audio/
 │   ├── audioEngine.js            # Proxy mutable: delega al motor de audio activo
-│   ├── instruments.js            # Registro de instrumentos disponibles
-│   ├── AudioManager.js           # Motor de sintesis (PolySynth fatsine)
-│   ├── SampleAudioManager.js     # Motor de samples (Tone.Player con loop)
-│   ├── GrainAudioManager.js      # Motor granular (dual player cycling con crossfade)
+│   ├── instruments.js            # Registro de instrumentos disponibles (MKS Drone, MKS Realistic)
+│   ├── AudioManager.js           # Motor de sintesis (PolySynth fatsine) — oculto
+│   ├── SampleAudioManager.js     # Motor de samples (Tone.Player con loop) — oculto
+│   ├── GrainAudioManager.js      # Motor granular (dual player cycling con crossfade) — MKS Drone
+│   ├── RealisticGrainAudioManager.js  # GrainAudioManager + bellows stagger — MKS Realistic
 │   └── noteMap.js                # 13 notas cromaticas (Sargam + komal/tivra)
 │
 ├── store/
@@ -46,7 +47,7 @@ src/
 │   └── useKeyboard.js            # Mapeo de teclado fisico (estilo piano, 13 notas)
 │
 └── config/
-    └── featureFlags.js           # Feature flags (teclado, velocidad, instrumentos)
+    └── featureFlags.js           # Feature flags (teclado, velocidad, instrumentos, version)
 ```
 
 ---
@@ -84,27 +85,24 @@ La aplicacion sigue una separacion clara en tres capas:
 ┌──────────────────────────────────────────────────────────────────────────────┐
 │                    CAPA DE AUDIO (Tone.js)                                    │
 │                    audioEngine.js (Proxy mutable)                             │
-│                    instruments.js (Registro)                                  │
+│                    instruments.js (Registro: MKS Drone, MKS Realistic)        │
 │                                                                              │
-│   ┌────────────────┐ ┌──────────────────┐ ┌──────────────────┐               │
-│   │ AudioManager   │ │SampleAudioManager│ │SampleAudioManager│               │
-│   │ (Base Sound)   │ │(Shrutibox Proto) │ │ (Shrutibox MKS)  │               │
-│   │ PolySynth      │ │ /sounds/         │ │ /sounds-mks/     │               │
-│   │ fatsine        │ │ Tone.Player+loop │ │ Tone.Player+loop │               │
-│   └───────┬────────┘ └────────┬─────────┘ └────────┬─────────┘               │
-│           │                   │                     │                         │
-│   ┌───────┴────────────┐ ┌───┴──────────────┐      │                         │
-│   │SampleAudioManager  │ │GrainAudioManager │      │                         │
-│   │ (MKS Crossfade)    │ │ (MKS Grain)      │      │                         │
-│   │ /sounds-mks-xfade/ │ │ /sounds-mks/     │      │                         │
-│   │ Tone.Player+loop   │ │ dual player      │      │                         │
-│   │ (crossfade baked)  │ │ cycling+crossfade│      │                         │
-│   └───────┬────────────┘ └───┬──────────────┘      │                         │
-│           └──────┬───────────┴──────────┬───────────┘                         │
-│                  ▼                                                            │
-│           Tone.Volume   →   Speaker                                           │
+│   ┌─────────────────────────────┐ ┌──────────────────────────────────┐       │
+│   │   GrainAudioManager         │ │   RealisticGrainAudioManager      │       │
+│   │   (MKS Drone — activo)      │ │   (MKS Realistic — activo)        │       │
+│   │   /sounds-mks/              │ │   /sounds-mks/                    │       │
+│   │   Tone.GrainPlayer          │ │   Tone.GrainPlayer                │       │
+│   │   dual player cycling       │ │   dual player cycling             │       │
+│   │   crossfade 2.0s            │ │   + bellows stagger (90ms/semi)   │       │
+│   └──────────────┬──────────────┘ └──────────────────┬───────────────┘       │
+│                  └─────────────────────┬──────────────┘                       │
+│                                        ▼                                      │
+│                                 Tone.Volume   →   Speaker                     │
 │                                                                              │
 │   noteMap.js: 13 notas cromaticas (Sa..Ni + komal/tivra + Sa↑)               │
+│                                                                              │
+│   Ocultos en instruments.js: AudioManager (Base Sound),                      │
+│   SampleAudioManager (Shrutibox Prototype, Shrutibox MKS, MKS Crossfade)     │
 └──────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -134,44 +132,36 @@ Acciones principales: `init()`, `setInstrument(id)`, `toggleNote(noteId)`, `togg
 
 ### 3. Audio (Tone.js)
 
-La capa de audio ofrece multiples motores intercambiables a traves del proxy mutable `audioEngine.js`:
+La capa de audio ofrece dos motores activos e intercambiables a traves del proxy mutable `audioEngine.js`:
 
-**Base Sound** (`AudioManager` — sintesis en tiempo real):
-- Crea un `PolySynth` con oscilador `fatsine` (spread:12, count:3) por cada nota.
-- Envelope configurable: Attack=0.08, Decay=0.3, Sustain=0.9, Release=0.8.
-- No requiere archivos de audio externos.
+**MKS Drone** (`GrainAudioManager` — dual player granular con crossfade):
+- Motor activo por defecto (ID: `mks-grain`).
+- Usa `Tone.GrainPlayer` con la tecnica de **dual player cycling**.
+- NO usa el loop built-in de GrainPlayer (que produce clicks). En su lugar, cicla manualmente dos GrainPlayers que se alternan con crossfade programatico de 2s. El audio nunca alcanza el punto de corte.
+- Reproduce el audio en "granos" pequenos (0.5s) con overlap (0.15s) para un timbre difuso y envolvente.
+- Cada player se conecta a un nodo `Tone.Gain` individual para control de crossfade y fade-out.
+- Al iniciar una nota aplica un fade-in suave de 2.5s. Usa los samples originales MKS sin pre-procesamiento.
 
-**Shrutibox Prototype** (`SampleAudioManager` — samples interpolados):
-- Precarga buffers de audio desde archivos MP3 en `/sounds/`.
-- Reproduce con `Tone.Player` en loop continuo (loopStart/loopEnd + fadeIn/fadeOut).
-- Los 13 samples se generan por pitch-shifting desde un unico WAV fuente con `scripts/generate-samples.sh`.
+**MKS Realistic** (`RealisticGrainAudioManager` — dual player granular + bellows stagger):
+- Motor activo (ID: `mks-realistic`). Extiende `GrainAudioManager`.
+- Simula el comportamiento fisico del fuelle: al activar multiples notas, las graves suenan primero y las agudas entran con delay progresivo (90ms/semitono), replicando como el aire del fuelle tarda mas en hacer vibrar lengüetas mas pequenas.
+- Fade-in escalado: las notas agudas tardan ligeramente mas en alcanzar volumen pleno (+4%/semitono).
+- Ciclos de sostenimiento con `cycleStart: 5.0s` (zona estable del drone) y crossfade asimetrico de 4.0s.
+- Bellows release: al detener el drone, las notas agudas se apagan primero.
+- Ver [`docs/realistic-engine.md`](realistic-engine.md) para documentacion detallada.
 
-**Shrutibox MKS** (`SampleAudioManager` — grabaciones reales):
-- Precarga buffers de audio desde archivos MP3 en `/sounds-mks/`.
-- Usa la misma clase `SampleAudioManager` con `basePath='/sounds-mks'`.
-- Los 13 samples provienen de grabaciones individuales del shrutibox Monoj Kumar Sardar, convertidas con `scripts/generate-mks-samples.sh`.
-- Nota: puede producir clicks audibles en los puntos de loop debido a discontinuidades en la forma de onda al saltar de `loopEnd` a `loopStart`. Los instrumentos MKS Crossfade y MKS Grain resuelven este problema con enfoques distintos.
-
-**MKS Crossfade** (`SampleAudioManager` — samples con crossfade pre-procesado):
-- Usa la misma clase `SampleAudioManager` con `basePath='/sounds-mks-xfade'` y loop configurado para reproducir el buffer completo (`loopStart: 0`, `loopEnd: null`).
-- Los samples se generan con `scripts/generate-mks-xfade-samples.sh`, que aplica un crossfade de 2 segundos entre el final y el inicio de cada archivo, eliminando discontinuidades en el punto de loop.
-- Resultado: loop seamless con sonido fiel a la grabacion original.
-
-**MKS Grain** (`GrainAudioManager` — dual player granular con crossfade):
-- Motor independiente que usa `Tone.GrainPlayer` con la tecnica de **dual player cycling**.
-- NO usa el loop built-in de GrainPlayer (que produce clicks al saltar de `loopEnd` a `loopStart`). En su lugar, cicla manualmente dos GrainPlayers que se alternan con crossfade programatico: antes de que el player activo llegue al final de la region, arranca un segundo player desde el inicio y hace crossfade entre ambos (2 segundos por defecto). El audio nunca alcanza el punto de corte.
-- Reproduce el audio en "granos" pequenos (0.5s) con overlap (0.15s) para suavizar la textura.
-- Cada player se conecta a un nodo `Tone.Gain` individual para controlar el crossfade y el fade-out al detener notas.
-- Al iniciar una nota, aplica un fade-in suave de 2.5 segundos (`initialFadeIn`) para una entrada gradual. Los ciclos posteriores del dual player usan su propio crossfade sin este fade-in adicional.
-- Usa los mismos samples originales MKS (`/sounds-mks/`); no requiere pre-procesamiento.
-- El caracter sonoro es ligeramente textural/difuso, ideal para drones ambientales.
-
-Todos los motores:
+Todos los motores activos:
 - Exponen la misma interfaz publica: `init()`, `playNote()`, `stopNote()`, `playNotes()`, `stopAll()`, `setVolume()`, `setSpeed()`, `dispose()`.
 - Se enrutan a un nodo `Tone.Volume` maestro (-6dB por defecto).
-- `AudioManager` es un singleton. `SampleAudioManager` y `GrainAudioManager` exportan clases, y las instancias se crean en `instruments.js` con distintos `basePath` y opciones.
+- Las instancias se crean en `instruments.js` con `basePath='/sounds-mks'`.
 
-**Registro de instrumentos** (`instruments.js`): define la lista de instrumentos disponibles, cada uno con un `id`, `name` y referencia a su `engine`.
+**Motores ocultos** (disponibles en codigo, no registrados en la UI):
+- `AudioManager` (Base Sound): sintesis PolySynth fatsine, sin samples.
+- `SampleAudioManager` con `/sounds/`: Shrutibox Prototype, samples interpolados.
+- `SampleAudioManager` con `/sounds-mks/`: Shrutibox MKS, loop directo con click audible.
+- `SampleAudioManager` con `/sounds-mks-xfade/`: MKS Crossfade, samples con crossfade baked-in.
+
+**Registro de instrumentos** (`instruments.js`): define la lista de instrumentos activos, cada uno con un `id`, `name` y referencia a su `engine`. Instrumentos inactivos estan comentados en el mismo archivo.
 
 **Proxy mutable** (`audioEngine.js`): envuelve el motor activo y delega todas las llamadas. El store llama `audioEngine.setEngine()` al cambiar de instrumento.
 
@@ -225,14 +215,15 @@ El hook `useKeyboard` conecta el teclado fisico con la app:
 
 ## Feature flags
 
-`config/featureFlags.js` permite activar/desactivar funcionalidades:
+`config/featureFlags.js` permite activar/desactivar funcionalidades sin modificar los componentes:
 
-| Flag                  | Default | Descripcion                                      |
-| --------------------- | ------- | ------------------------------------------------ |
-| keyboard              | on      | Soporte de teclado fisico                        |
-| speedControl          | off     | Control de velocidad del envelope (desactivado)  |
-| mobileLayout          | on      | Layout optimizado para movil                     |
-| instrumentSelector    | on      | Selector de instrumento en la UI                 |
+| Flag                     | Default | Descripcion                                                        |
+| ------------------------ | ------- | ------------------------------------------------------------------ |
+| `ENABLE_KEYBOARD`        | on      | Soporte de teclado fisico                                          |
+| `ENABLE_SPEED_CONTROL`   | off     | Control de velocidad del envelope (desactivado por defecto)        |
+| `ENABLE_MOBILE_LAYOUT`   | on      | Layout optimizado para movil                                       |
+| `ENABLE_INSTRUMENT_SELECTOR` | on  | Selector de instrumento en la UI                                   |
+| `SHOW_VERSION`           | off     | Muestra la version del release en el footer (placeholder hasta v1.0.0) |
 
 ---
 
@@ -250,3 +241,11 @@ El hook `useKeyboard` conecta el teclado fisico con la app:
 ## Mejoras de audio pendientes
 
 Se documentan opciones adicionales para resolver clicks en loops de samples que no fueron implementadas pero podrian retomarse a futuro. Ver [docs/audio-improvements.md](audio-improvements.md) para el detalle completo.
+
+---
+
+## Autor
+
+Desarrollado por [Lucas Paiva](https://github.com/lucaspaiva-dev).
+
+Basado en el instrumento fisico Monoj Kumar Sardar 440Hz.

@@ -2,13 +2,18 @@
  * @fileoverview Componente raiz del Shrutibox Digital.
  *
  * Muestra una pantalla de inicio con boton para activar el audio
- * (requisito del navegador), y luego renderiza el instrumento.
+ * (requisito del navegador), y luego renderiza el instrumento completo.
+ *
+ * El footer del instrumento muestra el credito de Monoj Kumar Sardar,
+ * el link al perfil del autor (Lucas Paiva) y, si SHOW_VERSION esta activo
+ * en featureFlags.js, la version actual del release.
  */
 
 import { useCallback } from 'react';
 import useShrutiStore from './store/useShrutiStore';
 import useKeyboard from './hooks/useKeyboard';
 import useTranslation from './i18n/useTranslation';
+import { FEATURE_FLAGS } from './config/featureFlags';
 import Display from './components/Display';
 import NoteGrid from './components/NoteGrid';
 import Controls from './components/Controls';
@@ -89,8 +94,22 @@ function ShrutiboxApp() {
         <NoteGrid />
         <Controls />
 
-        <footer className="text-center text-amber-800/30 text-xs pt-2 pb-4">
-          {t('footer.text')}
+        <footer className="text-center text-amber-800/30 text-xs pt-2 pb-4 space-y-0.5">
+          <div>{t('footer.text')}</div>
+          <div>
+            {t('footer.author')}{' '}
+            <a
+              href="https://github.com/lucaspaiva-dev"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-amber-800/60 transition-colors underline underline-offset-2"
+            >
+              Lucas Paiva
+            </a>
+            {FEATURE_FLAGS.SHOW_VERSION && (
+              <span> · v{__APP_VERSION__}</span>
+            )}
+          </div>
         </footer>
       </div>
     </div>

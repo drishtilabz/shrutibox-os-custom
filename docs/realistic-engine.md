@@ -1,8 +1,8 @@
-# Shrutibox MKS Realistic — Motor con Bellows Stagger
+# MKS Realistic — Motor con Bellows Stagger
 
 ## Problema: el onset plano del drone digital
 
-En los motores de audio existentes (`SampleAudioManager`, `GrainAudioManager`), al
+En los motores de audio anteriores (`SampleAudioManager`, `GrainAudioManager` / MKS Drone), al
 presionar Play todas las notas seleccionadas arrancan simultaneamente con el mismo
 fade-in. Esto produce un drone que "aparece" de golpe, algo que un shrutibox
 analogico real nunca hace.
@@ -226,11 +226,11 @@ Los IDs de los timeouts se almacenan en `this.pendingStarts` y `this.pendingStop
 
 ## Diferencia con los otros motores
 
-| Motor | Base | Loop | Onset | Release |
-|-------|------|------|-------|---------|
-| `SampleAudioManager` | Tone.Player | Loop built-in con fadeIn/fadeOut | Todas las notas simultaneas | Fade-out rapido uniforme |
-| `GrainAudioManager` | Tone.GrainPlayer | Dual player cycling con crossfade simultaneo | Todas las notas simultaneas, initialFadeIn uniforme | Fade-out rapido uniforme |
-| `RealisticGrainAudioManager` | Tone.GrainPlayer | Dual player cycling con crossfade escalonado (fadeOutDelay) desde cycleStart | Bellows stagger: grave→agudo con delay y fade-in escalado | Bellows release: agudo→grave con delay y fade-out escalado |
+| Motor | Instrumento UI | Base | Loop | Onset | Release |
+|-------|----------------|------|------|-------|---------|
+| `SampleAudioManager` | Shrutibox MKS (oculto) | Tone.Player | Loop built-in con fadeIn/fadeOut | Todas las notas simultaneas | Fade-out rapido uniforme |
+| `GrainAudioManager` | MKS Drone | Tone.GrainPlayer | Dual player cycling con crossfade simultaneo | Todas las notas simultaneas, initialFadeIn uniforme | Fade-out rapido uniforme |
+| `RealisticGrainAudioManager` | MKS Realistic | Tone.GrainPlayer | Dual player cycling con crossfade escalonado (fadeOutDelay) desde cycleStart | Bellows stagger: grave→agudo con delay y fade-in escalado | Bellows release: agudo→grave con delay y fade-out escalado |
 
 ## Archivo
 
@@ -238,5 +238,9 @@ Los IDs de los timeouts se almacenan en `this.pendingStarts` y `this.pendingStop
 
 Registrado en `src/audio/instruments.js` como:
 ```javascript
-{ id: 'mks-realistic', name: 'Shrutibox MKS Realistic', engine: mksRealisticManager }
+{ id: 'mks-realistic', name: 'MKS Realistic', engine: mksRealisticManager }
 ```
+
+---
+
+Desarrollado por [Lucas Paiva](https://github.com/lucaspaiva-dev).

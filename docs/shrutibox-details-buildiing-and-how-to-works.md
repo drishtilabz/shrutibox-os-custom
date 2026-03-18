@@ -175,15 +175,15 @@ Basado en el trabajo de Puranik y Scavone, una implementación avanzada podría 
 
 ***
 
-## Tabla Comparativa: Shruti Box Analógico vs. Tu App Actual
+## Tabla Comparativa: Shruti Box Analógico vs. App Shrutibox Digital
 
-| Aspecto | Shruti Box Analógico | App Actual (Tone.js fatsine) | Mejora Posible |
+| Aspecto | Shruti Box Analógico | MKS Drone / MKS Realistic (Tone.js) | Mejora Posible |
 |---|---|---|---|
-| Fuente de sonido | Pulsos de aire asimétricos con espectro extendido | Síntesis fatsine (3 oscillators detuned)[^18] | Usar samples MKS o wavetable basada en LTAS |
-| Filtrado de caja | Filtro pasivo de madera (8-9 formantes) | Sin filtro de caja | Implementar cascade biquad modelando la respuesta |
-| Dinámica del fuelle | Presión continua variable con inercia | Volume 0-1 + speed 0.25-3x[^18] | Modelar inercia del reservorio + micro-pitch variation |
-| Attack | Lento, con modos transitorios superiores | ADSR fijo (A=0.08)[^18] | Attack variable según "presión"; burst HF en transiente |
-| Release | Decay gradual por presión residual | Release fijo (R=0.8)[^18] | Release dependiente de estado del fuelle virtual |
+| Fuente de sonido | Pulsos de aire asimétricos con espectro extendido | Samples reales MKS (GrainPlayer granular)[^18] | Wavetable basada en LTAS para mayor fidelidad espectral |
+| Filtrado de caja | Filtro pasivo de madera (8-9 formantes) | Capturado en los samples MKS | Implementar cascade biquad adicional para afinar la respuesta |
+| Dinámica del fuelle | Presión continua variable con inercia | Volume 0-1 + bellows stagger en MKS Realistic | Modelar inercia del reservorio + micro-pitch variation |
+| Attack | Lento, con modos transitorios superiores | Fade-in escalado por semitono (MKS Realistic) | Attack variable según "presión"; burst HF en transiente |
+| Release | Decay gradual por presión residual | Bellows release escalonado (MKS Realistic) | Release dependiente de estado del fuelle virtual |
 | Multi-nota | Presión compartida (menos volumen por nota) | Volumen independiente por nota[^18] | Dividir presión virtual entre notas activas |
 | Micro-variación | Pitch drift ±1-2 Hz natural | Pitch fijo por nota | LFO sutil en pitch controlado por "presión" |
 
@@ -191,7 +191,9 @@ Basado en el trabajo de Puranik y Scavone, una implementación avanzada podría 
 
 ## Conclusión Técnica
 
-El shruti box es un instrumento de engañosa simplicidad mecánica que produce un sonido acústicamente complejo. La clave de su carácter orgánico reside en la interacción no-lineal entre presión del fuelle, oscilación de la lengüeta libre (con su alto Q y espectro extendido), y el filtrado pasivo de la caja de madera. Para replicar fielmente ese comportamiento en la app, el camino más efectivo es combinar **samples reales de tu MKS** (que ya capturan source + filter) con un **modelo de fuelle virtual** que module amplitud, micro-pitch y distribución de presión entre notas activas, más un **modelo de transiente** que contemple la lentitud inherente del onset free reed y los modos superiores transitorios.
+El shruti box es un instrumento de engañosa simplicidad mecánica que produce un sonido acústicamente complejo. La clave de su carácter orgánico reside en la interacción no-lineal entre presión del fuelle, oscilación de la lengüeta libre (con su alto Q y espectro extendido), y el filtrado pasivo de la caja de madera. Para replicar fielmente ese comportamiento en la app, el camino más efectivo es combinar **samples reales del MKS** (que ya capturan source + filter) con un **modelo de fuelle virtual** que module amplitud, micro-pitch y distribución de presión entre notas activas, más un **modelo de transiente** que contemple la lentitud inherente del onset free reed y los modos superiores transitorios.
+
+El instrumento **MKS Realistic** de la app implementa una aproximacion a este modelo mediante bellows stagger, fade-in escalado por semitono y bellows release. Ver [`docs/realistic-engine.md`](realistic-engine.md) para la documentacion tecnica detallada.
 
 ---
 
@@ -231,7 +233,8 @@ El shruti box es un instrumento de engañosa simplicidad mecánica que produce u
 
 17. [How To Play Shruti Box for Absolute Beginners with Ixchel Prisma](https://www.youtube.com/watch?v=hvVXtux4BYU) - Welcome to your first lesson on how to play the shruti box. In this video you will learn some basic ...
 
-18. [shrutibox-app-README.md](https://ppl-ai-file-upload.s3.amazonaws.com/web/direct-files/collection_7f8148a4-77e5-4692-a5f5-5bf995ab34cd/a28c6782-6d09-4d0e-b16a-f292f75acbdb/shrutibox-app-README.md?AWSAccessKeyId=ASIA2F3EMEYE55R64TQP&Signature=YNDr2AnIcw8ryQr0oP%2B5yvybnPk%3D&x-amz-security-token=IQoJb3JpZ2luX2VjEJb%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FwEaCXVzLWVhc3QtMSJGMEQCIAOHr1bKJ%2BPMC54ehdecIQvi528NleIqifmc%2BufmkaY9AiBUXDawJw%2FWFy2tkfAq02eRFrHtvKwObD0gljv33rt94CrzBAhfEAEaDDY5OTc1MzMwOTcwNSIM4RahnR2%2Fi5FtRzhfKtAElOs66Jl5JTJyrVseHft14%2BpyeV6LqC64%2BsEpyxZXOYGeEMVFFLaD9aKowUZZHvRHsPs7dzaxMW%2BeCjnpDzKJL%2FIfPNqtutP%2BFbAmlnxubvcJXoL1d22o%2F8hxYM0fkkpDB%2BQ6P2l%2BfK%2BQKoqdaTQqYnW3RnMGBep8dOtX2dYQNS98YFKCVhM8u4gJWmv4Z%2F9Zmuj2wmP6NoPH8xngF027eo92zrUfBTac49K%2BHt4Ny6QggATLbeYS9dyR2dUoR%2F9i9BoxMJQ2vmQyREGley4AuQLFbmHlVrYU3gv%2FF5wfAA2vM2ZGhFhi%2FZD0lzwFsFqBmRsWMnSqa6EDC2SeRm7oWw3l37NA6A13tLM6LYx7Jyel%2FkmslSGTgSkPuqv3IqrSgyF05DHTVNyJ3WriCbQWbl5a0IDkSUGhjVEEGhJsb0%2B35T0RPMgQLOl0LiwbDuQKzD5RL55oqW1cH2NEji%2FyKgCcGnYvfiRnyiRSIOjKsZ9RdkcsHCQ%2Fn8BkGcdPvrZNRSsdH1bjb1zqjC3HYx%2Futdjljmld430Z9c5C3VwW4G0c0kd5Kzjke%2FXNvbofwN%2FIx3oewOeUaRBU89xKIMAzYQEd%2BShPCfRg%2F74%2FIJcX7NjLm86M74vhVbPZII7EMWudbCzE2kDR2PUcgCMA0WQssWTdosZsHzxAkz6xdVX265ZG4tdQFoq0yW4pCKtDMX0lZXvVUQoNzE88YEWyGFd38cyrExFlkax7LoIHJuVrGYL1dde2VLsMKN9uzxZEYi9iRA6%2FfEGxL8QhqdsETg6CUzDEx43NBjqZAfrYp3zBb6sik3YN3h63SjVjav05Bzf%2FPaUvf4%2FM0y310sjbwqHjuPMkKalj7YvtIARhC%2FAQ0nRJNh%2BZypZl9%2FW0dgtZIYH%2B0dXaStYkC9%2B3QBbvG8k2qtAbwM9q2XyMVn4ya5ahmmLjhUcHkdRgK1YnwILkFBcGyW4Hf1uLFHCG2K41vzVkK%2FN0LMoaU2Cqm6IhX6zcyxLMjQ%3D%3D&Expires=1772319301) - # Shrutibox Digital
+18. [Shrutibox Digital — README.md](../README.md) — Documentacion del proyecto.
 
-Replica digital de un shrutibox acustico **Monoj Kumar Sardar 440Hz**, construi...
+---
 
+Desarrollado por [Lucas Paiva](https://github.com/lucaspaiva-dev).
