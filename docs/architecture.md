@@ -23,7 +23,7 @@ Replica digital de un shrutibox Monoj Kumar Sardar 440Hz. Construida con React 1
 src/
 ├── main.jsx                      # Punto de entrada (monta <App />)
 ├── App.jsx                       # Componente raiz (StartScreen / ShrutiboxApp + footer)
-├── index.css                     # Tailwind CSS + estilos del shrutibox
+├── index.css                     # Tailwind CSS + estilos del shrutibox (incluyendo .volume-slider-vertical)
 │
 ├── audio/
 │   ├── audioEngine.js            # Proxy mutable: delega al motor de audio activo
@@ -38,10 +38,10 @@ src/
 │   └── useShrutiStore.js         # Store global (Zustand)
 │
 ├── components/
-│   ├── Display.jsx               # Panel informativo (nota activa, estado)
-│   ├── NoteGrid.jsx              # Panel frontal del shrutibox (13 lengüetas)
+│   ├── Display.jsx               # [DEPRECADO v2] — lógica migrada a NoteGrid.jsx
+│   ├── NoteGrid.jsx              # Panel principal unificado (visor + lengüetas + mangos)
 │   ├── NoteButton.jsx            # Lengüeta individual (toggle switch)
-│   └── Controls.jsx              # Controles: instrumento, Play/Stop, volumen, velocidad
+│   └── Controls.jsx              # Barra compacta: solo selector de instrumento
 │
 ├── hooks/
 │   └── useKeyboard.js            # Mapeo de teclado fisico (estilo piano, 13 notas)
@@ -60,10 +60,10 @@ La aplicacion sigue una separacion clara en tres capas:
 ┌─────────────────────────────────────────────────────────────────────┐
 │                    CAPA DE PRESENTACION (React)                     │
 │                                                                     │
-│   Display ◄──────── NoteGrid ◄──────── Controls                    │
-│   (estado)      (13 NoteButton)     (Instr/Play/Vol)               │
-│                      │                     │                        │
-└──────────────────────┼─────────────────────┼────────────────────────┘
+│   NoteGrid ◄──────────────────────────── Controls                  │
+│   (visor + 13 NoteButton + play + vol)   (selector instrumento)    │
+│                      │                         │                    │
+└──────────────────────┼─────────────────────────┼────────────────────┘
                        │ toggleNote()        │ togglePlay()
                        │                     │ setVolume()
                        ▼                     ▼
@@ -110,10 +110,15 @@ La aplicacion sigue una separacion clara en tres capas:
 
 Componentes que renderizan la UI y capturan interacciones:
 
-- **Display** — muestra la nota seleccionada, estado de reproduccion y cantidad de notas activas.
-- **NoteGrid** — panel frontal del shrutibox con 13 lengüetas dispuestas horizontalmente. Fondo con textura de madera.
-- **NoteButton** — lengüeta toggle con tres estados visuales: cerrada (no seleccionada), abierta (seleccionada) y vibrando (seleccionada + reproduciendo). Las notas komal/tivra se diferencian visualmente.
-- **Controls** — selector de instrumento, Play/Stop, slider de volumen y control de velocidad.
+- **NoteGrid** — panel principal unificado (v2). Contiene tres zonas:
+  - *Visor*: muestra hasta 3 notas activas (nombre Sargam + ♭/♯) y badge "Sonando" animado.
+  - *Mango izquierdo*: toggle ON/OFF "NOTAS" — activa el modo didáctico (etiquetas visibles en lengüetas). Usa ícono power estándar.
+  - *Área de lengüetas*: 13 NoteButton en disposición cromática alternada sobre fondo de madera.
+  - *Mango derecho*: botón Play/Stop circular + slider de volumen vertical (fader físico).
+  - Los mangos imitan los mangos de fuelle del instrumento acústico real MKS.
+- **NoteButton** — lengüeta toggle con estados visual: cerrada (no seleccionada) y abierta/rotada (seleccionada). En modo didáctico muestra nombre Sargam y equivalente occidental.
+- **Controls** — barra compacta con selector de instrumento (MKS Drone / MKS Realistic). Play/Stop y Volumen fueron movidos a NoteGrid en v2.
+- **Display** — [DEPRECADO v2] su lógica fue inlinada en NoteGrid.jsx.
 
 ### 2. Estado (Zustand)
 
@@ -164,6 +169,61 @@ Todos los motores activos:
 **Registro de instrumentos** (`instruments.js`): define la lista de instrumentos activos, cada uno con un `id`, `name` y referencia a su `engine`. Instrumentos inactivos estan comentados en el mismo archivo.
 
 **Proxy mutable** (`audioEngine.js`): envuelve el motor activo y delega todas las llamadas. El store llama `audioEngine.setEngine()` al cambiar de instrumento.
+
+---
+
+---
+
+## UI Layout v2 — Mobile-First Minimalista
+
+### Motivación
+
+El rediseño v2 unifica los 3 contenedores originales (`Display` + `NoteGrid` + `Controls`) en un único panel principal, priorizando el uso en dispositivos móviles. La referencia visual es el frente del Shrutibox MKS físico (Monoj Kumar Sardar): panel de madera oscura con lengüetas de marfil y mangos de fuelle laterales como únicos elementos visibles.
+
+Imagen de referencia: `assets/shrutibox-frontal-mks-709df372-1768-4a8b-b639-4861a3be2ece.png`
+
+### Layout
+
+```
+┌──────────────────────────────────────────────────┐
+│  ← Inicio                        ES  PT  EN      │  header (sin cambios)
+├──────────────────────────────────────────────────┤
+│ ┌────────────────────────────────────────────┐   │
+│ │  [visor: Sa · Re♭ · Ma  ●Sonando]          │   │  visor integrado
+│ │  ·············································   │  separador
+│ │  [NOTAS]  [l][l][l][l][l][l][l][l][l][l]  [▶] │  mangos + lengüetas
+│ │   [⏻]                                     [|]  │  toggle / volumen
+│ │  ·············································   │  separador dec.
+│ └────────────────────────────────────────────┘   │
+├──────────────────────────────────────────────────┤
+│  Instrumento: [ MKS Drone ] [ MKS Realistic ]    │  barra compacta
+├──────────────────────────────────────────────────┤
+│            créditos / footer                     │
+└──────────────────────────────────────────────────┘
+```
+
+### Decisiones de diseño
+
+| Decisión | Justificación |
+|---|---|
+| Visor integrado sin borde propio | Reduce el número de contenedores visibles; el visor pertenece al instrumento |
+| Mangos laterales | Inspirados en los mangos de fuelle del MKS físico; agrupan controles sin romper la estética |
+| Toggle NOTAS con ícono power | Semántica ON/OFF clara y universal; más compacto que el slider físico anterior |
+| Volumen vertical (`writing-mode: vertical-lr`) | Imita un fader físico; conserva espacio horizontal crítico en mobile |
+| Play/Stop en mango derecho | Co-ubicación lógica con el volumen; acceso con pulgar en mobile |
+| Controls como barra compacta | El selector de instrumento es secundario; queda disponible sin ocupar espacio del panel |
+
+### Clases CSS nuevas
+
+| Clase | Archivo | Descripción |
+|---|---|---|
+| `.volume-slider-vertical` | `index.css` | `writing-mode: vertical-lr; direction: rtl` — slider de volumen vertical, min abajo / max arriba |
+
+### Clave i18n nueva
+
+| Clave | ES | PT | EN |
+|---|---|---|---|
+| `viewMode.title` | Notas | Notas | Notes |
 
 ---
 

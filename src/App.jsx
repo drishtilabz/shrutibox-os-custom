@@ -14,7 +14,6 @@ import useShrutiStore from './store/useShrutiStore';
 import useKeyboard from './hooks/useKeyboard';
 import useTranslation from './i18n/useTranslation';
 import { FEATURE_FLAGS } from './config/featureFlags';
-import Display from './components/Display';
 import NoteGrid from './components/NoteGrid';
 import Controls from './components/Controls';
 import LanguageSelector from './components/LanguageSelector';
@@ -90,7 +89,6 @@ function ShrutiboxApp() {
           <LanguageSelector />
         </div>
 
-        <Display />
         <NoteGrid />
         <Controls />
 
