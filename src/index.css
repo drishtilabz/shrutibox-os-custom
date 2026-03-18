@@ -101,3 +101,24 @@
   transform: translateY(-50%) rotate(-25deg);
   border-radius: 1px;
 }
+
+/*
+ * Slider de volumen vertical — mango derecho del panel principal.
+ * writing-mode + direction invierten el eje para que el minimo quede
+ * abajo y el maximo arriba, igual que un fader fisico.
+ */
+.volume-slider-vertical {
+  writing-mode: vertical-lr;
+  direction: rtl;
+  height: 76px;
+  width: 20px;
+  cursor: pointer;
+  accent-color: #f59e0b;
+  flex-shrink: 0;
+}
+
+@media (min-width: 640px) {
+  .volume-slider-vertical {
+    height: 96px;
+  }
+}

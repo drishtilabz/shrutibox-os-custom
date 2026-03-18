@@ -27,6 +27,7 @@ export default {
     'viewMode.minimalist': 'Min',
     'viewMode.didactic': 'Did',
     'viewMode.label': 'View mode',
+    'viewMode.title': 'Notes',
     'footer.text': 'Shrutibox Digital — Monoj Kumar Sardar 440Hz',
     'footer.author': 'Developed by',
   },
