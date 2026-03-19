@@ -42,16 +42,20 @@ const useShrutiStore = create((set, get) => ({
   /** @type {'minimalist'|'didactic'} Modo de visualizacion de las lenguetas. */
   viewMode: localStorage.getItem('shrutibox-viewMode') || 'minimalist',
 
+  /** @type {boolean} true si el efecto Chorus esta habilitado. */
+  chorusEnabled: localStorage.getItem('shrutibox-chorusEnabled') === 'true',
+
   /**
    * Inicializa el motor de audio del instrumento activo.
    * Debe llamarse tras una interaccion del usuario (requisito del navegador).
    */
   init: async () => {
-    const { instrumentId, volume } = get();
+    const { instrumentId, volume, chorusEnabled } = get();
     const instrument = INSTRUMENTS_BY_ID[instrumentId];
     await instrument.engine.init();
     audioEngine.setEngine(instrument.engine);
     audioEngine.setVolume(volume);
+    audioEngine.setChorusEnabled(chorusEnabled);
     set({ initialized: true });
   },
 
@@ -62,7 +66,7 @@ const useShrutiStore = create((set, get) => ({
    * @param {string} instrumentId - ID del instrumento destino
    */
   setInstrument: async (instrumentId) => {
-    const { playing, selectedNotes, volume, speed } = get();
+    const { playing, selectedNotes, volume, speed, chorusEnabled } = get();
     const instrument = INSTRUMENTS_BY_ID[instrumentId];
     if (!instrument) return;
 
@@ -74,6 +78,7 @@ const useShrutiStore = create((set, get) => ({
     audioEngine.setEngine(instrument.engine);
     audioEngine.setVolume(volume);
     audioEngine.setSpeed(speed);
+    audioEngine.setChorusEnabled(chorusEnabled);
 
     if (playing && selectedNotes.length > 0) {
       audioEngine.playNotes(selectedNotes);
@@ -149,6 +154,17 @@ const useShrutiStore = create((set, get) => ({
     const next = viewMode === 'minimalist' ? 'didactic' : 'minimalist';
     localStorage.setItem('shrutibox-viewMode', next);
     set({ viewMode: next });
+  },
+
+  /**
+   * Activa o desactiva el efecto Chorus y persiste la preferencia.
+   */
+  toggleChorus: () => {
+    const { chorusEnabled } = get();
+    const next = !chorusEnabled;
+    audioEngine.setChorusEnabled(next);
+    localStorage.setItem('shrutibox-chorusEnabled', String(next));
+    set({ chorusEnabled: next });
   },
 
   /**

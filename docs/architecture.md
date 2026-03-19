@@ -97,7 +97,11 @@ La aplicacion sigue una separacion clara en tres capas:
 │   └──────────────┬──────────────┘ └──────────────────┬───────────────┘       │
 │                  └─────────────────────┬──────────────┘                       │
 │                                        ▼                                      │
-│                                 Tone.Volume   →   Speaker                     │
+│                                 Tone.Volume (-6dB)                            │
+│                                        ▼                                      │
+│                   Tone.Chorus (wet:0.3 si activo / wet:0 si inactivo)         │
+│                                        ▼                                      │
+│                                     Speaker                                   │
 │                                                                              │
 │   noteMap.js: 13 notas cromaticas (Sa..Ni + komal/tivra + Sa↑)               │
 │                                                                              │
@@ -112,7 +116,9 @@ Componentes que renderizan la UI y capturan interacciones:
 
 - **NoteGrid** — panel principal unificado (v2). Contiene tres zonas:
   - *Visor*: muestra hasta 3 notas activas (nombre Sargam + ♭/♯) y badge "Sonando" animado.
-  - *Mango izquierdo*: toggle ON/OFF "NOTAS" — activa el modo didáctico (etiquetas visibles en lengüetas). Usa ícono power estándar.
+  - *Mango izquierdo*: dos toggles apilados verticalmente separados por una línea sutil:
+    - **NOTAS** (`⏻`) — activa el modo didáctico (etiquetas visibles en lengüetas).
+    - **FX** (ícono barras de audio) — activa/desactiva el efecto Chorus. Persiste en `localStorage`.
   - *Área de lengüetas*: 13 NoteButton en disposición cromática alternada sobre fondo de madera.
   - *Mango derecho*: botón Play/Stop circular + slider de volumen vertical (fader físico).
   - Los mangos imitan los mangos de fuelle del instrumento acústico real MKS.
@@ -124,16 +130,18 @@ Componentes que renderizan la UI y capturan interacciones:
 
 Store centralizado con estado reactivo:
 
-| Estado          | Tipo       | Descripcion                          |
-| --------------- | ---------- | ------------------------------------ |
-| `initialized`   | `boolean`  | Audio context listo                  |
-| `instrumentId`  | `string`   | ID del instrumento activo            |
-| `selectedNotes` | `string[]` | IDs de notas activas                 |
-| `playing`       | `boolean`  | Drone activo                         |
-| `volume`        | `number`   | Volumen maestro (0-1)                |
-| `speed`         | `number`   | Multiplicador de envelope (0.25-3)   |
+| Estado          | Tipo       | Persistencia       | Descripcion                          |
+| --------------- | ---------- | ------------------ | ------------------------------------ |
+| `initialized`   | `boolean`  | —                  | Audio context listo                  |
+| `instrumentId`  | `string`   | —                  | ID del instrumento activo            |
+| `selectedNotes` | `string[]` | —                  | IDs de notas activas                 |
+| `playing`       | `boolean`  | —                  | Drone activo                         |
+| `volume`        | `number`   | —                  | Volumen maestro (0-1)                |
+| `speed`         | `number`   | —                  | Multiplicador de envelope (0.25-3)   |
+| `viewMode`      | `string`   | `localStorage`     | Modo visual: `minimalist` / `didactic` |
+| `chorusEnabled` | `boolean`  | `localStorage`     | Efecto Chorus activo/inactivo        |
 
-Acciones principales: `init()`, `setInstrument(id)`, `toggleNote(noteId)`, `togglePlay()`, `setVolume()`, `setSpeed()`, `reset()`.
+Acciones principales: `init()`, `setInstrument(id)`, `toggleNote(noteId)`, `togglePlay()`, `setVolume()`, `setSpeed()`, `toggleViewMode()`, `toggleChorus()`, `reset()`.
 
 ### 3. Audio (Tone.js)
 
@@ -156,9 +164,18 @@ La capa de audio ofrece dos motores activos e intercambiables a traves del proxy
 - Ver [`docs/realistic-engine.md`](realistic-engine.md) para documentacion detallada.
 
 Todos los motores activos:
-- Exponen la misma interfaz publica: `init()`, `playNote()`, `stopNote()`, `playNotes()`, `stopAll()`, `setVolume()`, `setSpeed()`, `dispose()`.
-- Se enrutan a un nodo `Tone.Volume` maestro (-6dB por defecto).
+- Exponen la misma interfaz publica: `init()`, `playNote()`, `stopNote()`, `playNotes()`, `stopAll()`, `setVolume()`, `setSpeed()`, `setChorusEnabled(bool)`, `dispose()`.
+- Se enrutan a un nodo `Tone.Volume` maestro (-6dB) seguido de un `Tone.Chorus` (ver abajo).
 - Las instancias se crean en `instruments.js` con `basePath='/sounds-mks'`.
+
+**Efecto Chorus** (ambos motores granulares):
+- Nodo `Tone.Chorus` insertado entre `Volume` y `Destination`: `Volume → Chorus → Destination`.
+- Parametros: `frequency: 0.4 Hz`, `delayTime: 2.5ms`, `depth: 0.15`, `spread: 0`.
+- Arranca **desactivado** (`wet: 0`). Se activa via `setChorusEnabled(true)` que sube `wet` a `0.3`.
+- Usar `wet: 0 / 0.3` en lugar de re-rutear nodos evita clicks al hacer toggle en vivo.
+- El estado persiste en `localStorage` (`shrutibox-chorusEnabled`) y se restaura al iniciar o cambiar instrumento.
+- `spread: 0` evita problemas de cancelacion de fase en bocinas mono (telefonos, parlantes portatiles).
+- El LFO del chorus arranca en `init()` con `chorus.start()` y se libera en `dispose()`.
 
 **Motores ocultos** (disponibles en codigo, no registrados en la UI):
 - `AudioManager` (Base Sound): sintesis PolySynth fatsine, sin samples.
@@ -168,7 +185,7 @@ Todos los motores activos:
 
 **Registro de instrumentos** (`instruments.js`): define la lista de instrumentos activos, cada uno con un `id`, `name` y referencia a su `engine`. Instrumentos inactivos estan comentados en el mismo archivo.
 
-**Proxy mutable** (`audioEngine.js`): envuelve el motor activo y delega todas las llamadas. El store llama `audioEngine.setEngine()` al cambiar de instrumento.
+**Proxy mutable** (`audioEngine.js`): envuelve el motor activo y delega todas las llamadas. El store llama `audioEngine.setEngine()` al cambiar de instrumento. Usa `?.` en `setChorusEnabled()` para no fallar con motores que no implementan el efecto (ej: `AudioManager`).
 
 ---
 
@@ -192,7 +209,9 @@ Imagen de referencia: `assets/shrutibox-frontal-mks-709df372-1768-4a8b-b639-4861
 │ │  [visor: Sa · Re♭ · Ma  ●Sonando]          │   │  visor integrado
 │ │  ·············································   │  separador
 │ │  [NOTAS]  [l][l][l][l][l][l][l][l][l][l]  [▶] │  mangos + lengüetas
-│ │   [⏻]                                     [|]  │  toggle / volumen
+│ │   [⏻]                                     [|]  │  toggle NOTAS / volumen
+│ │  ────── ·                                      │  separador interno mango-izq
+│ │  [ FX ]                                        │  toggle Chorus (ON/OFF)
 │ │  ·············································   │  separador dec.
 │ └────────────────────────────────────────────┘   │
 ├──────────────────────────────────────────────────┤
@@ -219,11 +238,13 @@ Imagen de referencia: `assets/shrutibox-frontal-mks-709df372-1768-4a8b-b639-4861
 |---|---|---|
 | `.volume-slider-vertical` | `index.css` | `writing-mode: vertical-lr; direction: rtl` — slider de volumen vertical, min abajo / max arriba |
 
-### Clave i18n nueva
+### Claves i18n nuevas
 
 | Clave | ES | PT | EN |
 |---|---|---|---|
 | `viewMode.title` | Notas | Notas | Notes |
+| `chorus.title` | FX | FX | FX |
+| `chorus.label` | Activar efecto de coro | Ativar efeito chorus | Enable chorus effect |
 
 ---
 
@@ -298,9 +319,12 @@ El hook `useKeyboard` conecta el teclado fisico con la app:
 
 ---
 
-## Mejoras de audio pendientes
+## Mejoras de audio
 
-Se documentan opciones adicionales para resolver clicks en loops de samples que no fueron implementadas pero podrian retomarse a futuro. Ver [docs/audio-improvements.md](audio-improvements.md) para el detalle completo.
+Ver [docs/audio-improvements.md](audio-improvements.md) para el historial completo:
+
+- Solucion al click en puntos de loop (dual player cycling, crossfade baked-in).
+- Efecto Chorus opcional con toggle ON/OFF en la UI, optimizado para bocinas de telefono, escritorio y parlantes portatiles.
 
 ---
 

@@ -76,6 +76,62 @@ Usa los mismos samples originales MKS sin pre-procesamiento. Esta tecnica es la 
 
 ---
 
+## Efecto Chorus opcional — Enriquecimiento del timbre para bocinas pequeñas
+
+Este apartado documenta el efecto Chorus agregado para mejorar la percepcion del drone en bocinas de telefono, bocinas de escritorio y parlantes portatiles (ej: JBL Go 4).
+
+### Motivacion
+
+Un drone de shruti box reproducido directamente desde sample suena plano en bocinas pequeñas, principalmente porque:
+- No hay variacion natural del timbre (sin movimiento).
+- En bocinas mono no hay separacion espacial.
+- No replica la micro-desafinacion natural entre multiples lengüetas del instrumento real.
+
+El Chorus simula exactamente ese caracter de "multiples lengüetas ligeramente desafinadas" y funciona en bocinas mono sin producir cancelaciones de fase.
+
+### Implementacion
+
+**Cadena de senal:**
+```
+GrainPlayer → Gain(por nota) → Volume → Chorus → Destination
+```
+
+**Parametros** (`GrainAudioManager` y `RealisticGrainAudioManager`):
+
+```javascript
+new Tone.Chorus({
+  frequency: 0.4,    // LFO muy lento (~2.5s por ciclo) — movimiento imperceptible como efecto
+  delayTime: 2.5,    // delay en ms entre señal original y copia modulada
+  depth: 0.15,       // profundidad baja — grosor sutil, sin wobble de afinacion
+  spread: 0,         // sin separacion estereo — evita cancelacion de fase en mono
+  wet: 0,            // arranca desactivado; sube a 0.3 cuando el usuario lo activa
+})
+```
+
+> **Por que `depth: 0.15` y no mayor**: con profundidades altas (≥ 0.5), el chorus modula el pitch de cada grano del GrainPlayer de forma perceptible, creando un efecto de "wobble" o "sonido sucio". A 0.15, el efecto es grosor y calidez, no modulacion de pitch.
+
+> **Por que `spread: 0`**: el spread por defecto de Tone.js Chorus es 180°, que crea maxima separacion estereo. En bocinas mono (la mayoria de los dispositivos objetivo), las dos señales se suman fuera de fase y producen cancelaciones que suenan como "suciedad". Con `spread: 0`, el chorus opera identicamente en ambos canales.
+
+**Activacion/desactivacion en vivo:**
+
+Se usa `chorus.wet.value` en lugar de desconectar/reconectar nodos para evitar clicks durante el toggle:
+
+```javascript
+setChorusEnabled(enabled) {
+  this.chorus.wet.value = enabled ? 0.3 : 0;
+}
+```
+
+### Control de usuario — Toggle FX
+
+El efecto se controla con un toggle **FX** en el mango izquierdo del panel principal (`NoteGrid.jsx`), debajo del toggle NOTAS. El estado persiste en `localStorage` (`shrutibox-chorusEnabled`) y se restaura al iniciar la app o al cambiar de instrumento.
+
+- **Default**: desactivado. El sonido sale sin modificar por defecto; el usuario activa el efecto si lo necesita para su dispositivo.
+- **Flujo de datos**: `NoteGrid → toggleChorus() (store) → audioEngine.setChorusEnabled() → motor.chorus.wet.value`.
+- El proxy `audioEngine.js` usa `?.` en la delegacion para que motores sin chorus (ej: `AudioManager`) no fallen.
+
+---
+
 ## Soluciones no implementadas (futuras)
 
 Las siguientes opciones fueron evaluadas pero no implementadas. Se documentan para referencia en caso de querer explorarlas.

@@ -28,6 +28,8 @@ export default {
     'viewMode.didactic': 'Did',
     'viewMode.label': 'Modo de visualización',
     'viewMode.title': 'Notas',
+    'chorus.title': 'FX',
+    'chorus.label': 'Activar efecto de coro',
     'footer.text': 'Shrutibox Digital — Monoj Kumar Sardar 440Hz',
     'footer.author': 'Desarrollado por',
   },
