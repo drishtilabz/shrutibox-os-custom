@@ -35,6 +35,8 @@ export default function NoteGrid() {
 
   const viewMode      = useShrutiStore((s) => s.viewMode);
   const toggleViewMode = useShrutiStore((s) => s.toggleViewMode);
+  const chorusEnabled  = useShrutiStore((s) => s.chorusEnabled);
+  const toggleChorus   = useShrutiStore((s) => s.toggleChorus);
   const selectedNotes = useShrutiStore((s) => s.selectedNotes);
   const playing       = useShrutiStore((s) => s.playing);
   const togglePlay    = useShrutiStore((s) => s.togglePlay);
@@ -119,8 +121,8 @@ export default function NoteGrid() {
       {/* ── Fila central: mango-izq | lengüetas | mango-der ──────────────── */}
       <div className="flex items-stretch px-2 sm:px-3 py-3 sm:py-4 gap-1.5 sm:gap-2">
 
-        {/* Mango izquierdo — Toggle NOTAS (modo didáctico / minimalista) */}
-        <div className="flex flex-col items-center justify-center gap-2 w-10 sm:w-12 shrink-0 rounded-lg bg-amber-900/25 border border-amber-800/20 py-2">
+        {/* Mango izquierdo — Toggle NOTAS + Toggle FX */}
+        <div className="flex flex-col items-center justify-start gap-2 w-10 sm:w-12 shrink-0 rounded-lg bg-amber-900/25 border border-amber-800/20 py-2 pt-2.5">
           <span className={`text-[7px] sm:text-[8px] uppercase tracking-widest font-semibold leading-none transition-colors duration-300 ${
             isDidactic ? 'text-amber-400' : 'text-amber-700/45'
           }`}>
@@ -149,6 +151,44 @@ export default function NoteGrid() {
             >
               <path d="M12 2v6" />
               <path d="M4.93 4.93a10 10 0 1 0 14.14 0" />
+            </svg>
+          </button>
+
+          {/* Separador */}
+          <div className="w-5 h-px bg-amber-900/30" />
+
+          {/* Toggle FX (Chorus) */}
+          <span className={`text-[7px] sm:text-[8px] uppercase tracking-widest font-semibold leading-none transition-colors duration-300 ${
+            chorusEnabled ? 'text-amber-400' : 'text-amber-700/45'
+          }`}>
+            {t('chorus.title')}
+          </span>
+
+          <button
+            onClick={toggleChorus}
+            className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center transition-all duration-300 active:scale-90 ${
+              chorusEnabled
+                ? 'bg-amber-500/20 text-amber-400 border border-amber-500/40 shadow-sm shadow-amber-500/10'
+                : 'bg-stone-800/60 text-amber-700/35 border border-stone-700/30'
+            }`}
+            aria-label={t('chorus.label')}
+            aria-pressed={chorusEnabled}
+          >
+            {/* Ícono ondas de audio */}
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="w-3.5 h-3.5 sm:w-4 sm:h-4"
+            >
+              <path d="M9 18V6" />
+              <path d="M5 16v-4" />
+              <path d="M13 18V4" />
+              <path d="M17 16v-4" />
+              <path d="M21 16V8" />
             </svg>
           </button>
         </div>

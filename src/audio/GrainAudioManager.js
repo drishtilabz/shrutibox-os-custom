@@ -9,6 +9,13 @@
  * y hace crossfade entre ambos. El audio nunca alcanza el punto de loop
  * problematico.
  *
+ * La cadena de senal es:
+ *   GrainPlayer → Gain(por nota) → Volume → Chorus → Destination
+ *
+ * El Chorus añade grosor y calidez simulando la micro-desafinacion natural
+ * entre multiples lengüetas del instrumento real. Funciona en bocinas mono.
+ * Arranca desactivado (wet: 0); se habilita via setChorusEnabled(true).
+ *
  * Implementa la misma interfaz publica que AudioManager y SampleAudioManager:
  * init(), playNote(), stopNote(), playNotes(), stopAll(),
  * setVolume(), setSpeed(), dispose().
@@ -45,9 +52,17 @@ class GrainAudioManager {
     this.initialized = false;
     this.buffers = new Map();
     this.activePlayers = new Map();
-    this.volume = new Tone.Volume(-6).toDestination();
     this.fadeInTime = this.grainConfig.fadeIn;
     this.fadeOutTime = this.grainConfig.fadeOut;
+
+    this.chorus = new Tone.Chorus({
+      frequency: 0.4,
+      delayTime: 2.5,
+      depth: 0.15,
+      spread: 0,
+      wet: 0,
+    }).toDestination();
+    this.volume = new Tone.Volume(-6).connect(this.chorus);
   }
 
   /** @private */
@@ -61,6 +76,7 @@ class GrainAudioManager {
    */
   async init() {
     if (this.initialized) return;
+    this.chorus.start();
     await Tone.start();
 
     const loadPromises = NOTES.map(
@@ -224,6 +240,15 @@ class GrainAudioManager {
   }
 
   /**
+   * Activa o desactiva el efecto Chorus ajustando su wet mix.
+   * Usar wet:0/0.3 en lugar de desconectar nodos evita clicks al hacer toggle en vivo.
+   * @param {boolean} enabled
+   */
+  setChorusEnabled(enabled) {
+    this.chorus.wet.value = enabled ? 0.3 : 0;
+  }
+
+  /**
    * Ajusta el volumen maestro.
    * @param {number} value - Valor entre 0 (silencio) y 1 (maximo)
    */
@@ -257,6 +282,8 @@ class GrainAudioManager {
     }
     this.buffers.clear();
     this.volume.dispose();
+    this.chorus.stop();
+    this.chorus.dispose();
     this.initialized = false;
   }
 }

@@ -9,7 +9,7 @@
  * su interfaz publica sin conocer cual motor esta activo internamente.
  *
  * API exportada: setEngine(), init(), playNote(), stopNote(), playNotes(),
- *                stopAll(), setVolume(), setSpeed(), dispose()
+ *                stopAll(), setVolume(), setSpeed(), setChorusEnabled(), dispose()
  */
 
 import audioManager from './AudioManager';
@@ -58,6 +58,10 @@ class AudioEngineProxy {
 
   setSpeed(speed) {
     this._engine.setSpeed(speed);
+  }
+
+  setChorusEnabled(enabled) {
+    this._engine.setChorusEnabled?.(enabled);
   }
 
   dispose() {
