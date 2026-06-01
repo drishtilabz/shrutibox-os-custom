@@ -22,19 +22,19 @@ export default function Controls() {
   if (!FEATURE_FLAGS.ENABLE_INSTRUMENT_SELECTOR) return null;
 
   return (
-    <div className="bg-sb-bg/50 backdrop-blur-sm rounded-xl border border-sb-border/30 px-4 py-2.5 flex items-center gap-3">
-      <span className="text-[10px] text-sb-text-faint uppercase tracking-wider font-medium shrink-0">
+    <div className="sb-surface backdrop-blur-sm rounded-xl px-4 py-2.5 flex items-center gap-3">
+      <span className="text-[10px] text-sb-text-faint uppercase tracking-[0.14em] font-semibold shrink-0">
         {t('controls.instrument')}
       </span>
-      <div className="flex gap-2 flex-1">
+      <div className="flex gap-1 flex-1 rounded-lg bg-sb-bg-deep/20 p-1">
         {INSTRUMENTS.map((inst) => (
           <button
             key={inst.id}
             onClick={() => setInstrument(inst.id)}
-            className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-bold transition-all active:scale-95 ${
+            className={`flex-1 py-1.5 px-3 rounded-md text-xs font-bold transition-all duration-150 active:scale-95 ${
               inst.id === instrumentId
-                ? 'bg-sb-accent text-sb-accent-ink shadow-sm'
-                : 'bg-sb-chrome/40 text-sb-text-faint hover:bg-sb-border/50 hover:text-sb-text-mid'
+                ? 'bg-sb-accent text-sb-accent-ink shadow-[0_2px_10px_-2px_var(--sb-accent-glow)]'
+                : 'text-sb-text-faint hover:bg-sb-surface-2 hover:text-sb-text-mid'
             }`}
           >
             {inst.name}

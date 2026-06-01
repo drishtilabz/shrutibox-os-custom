@@ -178,7 +178,7 @@ export default function MetronomePanel() {
         </button>
 
         <div className="flex flex-col items-center min-w-[36px]">
-          <span className="text-sb-text font-bold text-sm sm:text-base tabular-nums leading-none">{bpm}</span>
+          <span className="sb-display text-sb-text font-semibold text-base sm:text-lg tabular-nums leading-none">{bpm}</span>
           <span className="text-[6px] sm:text-[7px] text-sb-text-faint/40 uppercase tracking-[0.12em] font-medium mt-0.5 leading-none">
             {getTempoMark(bpm)}
           </span>
