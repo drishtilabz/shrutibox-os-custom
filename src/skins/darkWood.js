@@ -37,6 +37,12 @@ export default {
     '--sb-muted': '#c47a30',
     '--sb-neutral': '#2a1f15',
 
+    // Sistema de superficies (chrome moderno del rediseño híbrido)
+    '--sb-surface-1': 'rgba(58, 38, 22, 0.55)',
+    '--sb-surface-2': 'rgba(92, 60, 32, 0.55)',
+    '--sb-surface-border': 'rgba(160, 110, 60, 0.22)',
+    '--sb-accent-glow': 'rgba(232, 147, 10, 0.55)',
+
     '--sb-play': '#10b981',
     '--sb-stop': '#ef4444',
     '--sb-playing': '#34d399',
