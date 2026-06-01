@@ -8,8 +8,10 @@
 
 import darkWood from './darkWood';
 import lightWood from './lightWood';
+import brassNight from './brassNight';
+import spicedIndigo from './spicedIndigo';
 
-export const SKINS = [darkWood, lightWood];
+export const SKINS = [darkWood, lightWood, brassNight, spicedIndigo];
 
 export const SKINS_BY_ID = Object.fromEntries(
   SKINS.map((skin) => [skin.id, skin]),

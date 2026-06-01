@@ -71,8 +71,8 @@ export default function NoteGrid() {
                 shrink-0 w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center
                 transition-all duration-300 active:scale-90
                 ${metronomeEnabled
-                  ? 'bg-sb-accent/20 text-sb-accent border border-sb-accent/40 shadow-sm shadow-sb-accent/10'
-                  : 'bg-sb-neutral/60 text-sb-text-faint/60 border border-sb-neutral/40'
+                  ? 'sb-toggle-on'
+                  : 'sb-toggle-off'
                 }
               `}
               aria-label={t('metronome.label')}
@@ -99,7 +99,7 @@ export default function NoteGrid() {
           <div className="flex-1 min-w-0 flex flex-col items-center justify-center gap-1">
             <div className="flex items-center justify-center">
               {displayNotes.length > 0 ? (
-                <div className="text-2xl sm:text-3xl font-bold text-sb-text leading-none">
+                <div className="sb-display text-3xl sm:text-4xl font-semibold text-sb-text leading-none">
                   {displayNotes.map((note, i) => (
                     <span key={note.id}>
                       {i > 0 && (
@@ -144,7 +144,7 @@ export default function NoteGrid() {
       <div className="flex items-stretch px-2 sm:px-3 py-3 sm:py-4 gap-1.5 sm:gap-2">
 
         {/* Mango izquierdo — Toggle NOTAS + Toggle FX */}
-        <div className="flex flex-col items-center justify-start gap-2 w-10 sm:w-12 shrink-0 rounded-lg bg-sb-chrome/25 border border-sb-border/20 py-2 pt-2.5">
+        <div className="flex flex-col items-center justify-start gap-2 w-10 sm:w-12 shrink-0 rounded-lg sb-surface py-2 pt-2.5">
           <span className={`text-[7px] sm:text-[8px] uppercase tracking-widest font-semibold leading-none transition-colors duration-300 ${
             isDidactic ? 'text-sb-accent' : 'text-sb-text-faint'
           }`}>
@@ -155,8 +155,8 @@ export default function NoteGrid() {
             onClick={toggleViewMode}
             className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center transition-all duration-300 active:scale-90 ${
               isDidactic
-                ? 'bg-sb-accent/20 text-sb-accent border border-sb-accent/40 shadow-sm shadow-sb-accent/10'
-                : 'bg-sb-neutral/60 text-sb-text-faint/80 border border-sb-neutral/40'
+                ? 'sb-toggle-on'
+                : 'sb-toggle-off'
             }`}
             aria-label={t('viewMode.label')}
             aria-pressed={isDidactic}
@@ -189,8 +189,8 @@ export default function NoteGrid() {
             onClick={toggleChorus}
             className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center transition-all duration-300 active:scale-90 ${
               chorusEnabled
-                ? 'bg-sb-accent/20 text-sb-accent border border-sb-accent/40 shadow-sm shadow-sb-accent/10'
-                : 'bg-sb-neutral/60 text-sb-text-faint/80 border border-sb-neutral/40'
+                ? 'sb-toggle-on'
+                : 'sb-toggle-off'
             }`}
             aria-label={t('chorus.label')}
             aria-pressed={chorusEnabled}
@@ -221,7 +221,7 @@ export default function NoteGrid() {
         </div>
 
         {/* Mango derecho — Play/Stop + Volumen vertical */}
-        <div className="flex flex-col items-center justify-start gap-2 w-10 sm:w-12 shrink-0 rounded-lg bg-sb-chrome/25 border border-sb-border/20 py-2 pt-2.5">
+        <div className="flex flex-col items-center justify-start gap-2 w-10 sm:w-12 shrink-0 rounded-lg sb-surface py-2 pt-2.5">
 
           {/* Botón Play / Stop */}
           <button

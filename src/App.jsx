@@ -41,15 +41,15 @@ function StartScreen({ onStart, loading, error }) {
 
       <div className="text-center max-w-md space-y-8">
         <div className="space-y-3">
-          <h1 className="text-4xl sm:text-5xl font-bold text-sb-text tracking-tight">
+          <h1 className="sb-display text-5xl sm:text-6xl font-semibold text-sb-text tracking-tight">
             {t('app.title')}
           </h1>
-          <p className="text-sb-text-faint text-sm">
+          <p className="text-sb-text-faint text-sm tracking-wide">
             {t('app.subtitle')}
           </p>
         </div>
 
-        <div className="w-24 h-px bg-gradient-to-r from-transparent via-sb-text-faint/30 to-transparent mx-auto" />
+        <div className="w-24 h-px bg-gradient-to-r from-transparent via-sb-accent/40 to-transparent mx-auto" />
 
         <p className="text-sb-text-mid/80 text-sm leading-relaxed">
           {t('start.description')}<br />
@@ -59,10 +59,10 @@ function StartScreen({ onStart, loading, error }) {
         <button
           onClick={onStart}
           disabled={loading}
-          className={`px-10 py-5 font-bold text-lg rounded-2xl transition-all shadow-lg ${
+          className={`sb-glow-accent px-10 py-5 font-bold text-lg rounded-2xl transition-all duration-200 ${
             loading
               ? 'bg-sb-accent/50 text-sb-accent-ink/70 cursor-wait'
-              : 'bg-sb-accent hover:bg-sb-accent-hover text-sb-accent-ink hover:scale-105 active:scale-95 shadow-sb-accent/20'
+              : 'bg-sb-accent hover:bg-sb-accent-hover text-sb-accent-ink hover:scale-105 active:scale-95 shadow-[0_8px_30px_-6px_var(--sb-accent-glow)]'
           }`}
         >
           {loading ? (
@@ -105,7 +105,7 @@ function ShrutiboxApp() {
         <div className="flex items-center justify-between">
           <button
             onClick={reset}
-            className="flex items-center gap-1.5 text-sb-accent/80 hover:text-sb-accent-hover text-sm transition-colors active:scale-95"
+            className="sb-control flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sb-accent/90 hover:text-sb-accent-hover text-sm"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"

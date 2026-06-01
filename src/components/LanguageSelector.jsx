@@ -6,20 +6,17 @@ export default function LanguageSelector() {
   const setLocale = useLanguageStore((s) => s.setLocale);
 
   return (
-    <div className="flex gap-1">
+    <div className="sb-surface flex gap-0.5 rounded-lg p-0.5">
       {LOCALES.map((loc) => (
         <button
           key={loc.id}
           onClick={() => setLocale(loc.id)}
           title={loc.name}
-          className={`
-            px-2 py-1 rounded text-xs font-bold transition-all
-            ${
-              loc.id === locale
-                ? 'bg-sb-accent text-sb-accent-ink shadow-sm'
-                : 'bg-sb-chrome/40 text-sb-text-faint hover:bg-sb-border/50 hover:text-sb-text-mid'
-            }
-          `}
+          className={`px-2.5 py-1.5 rounded-md text-xs font-bold transition-all duration-150 active:scale-95 ${
+            loc.id === locale
+              ? 'bg-sb-accent text-sb-accent-ink shadow-sm'
+              : 'text-sb-text-faint hover:text-sb-text-mid'
+          }`}
         >
           {loc.label}
         </button>

@@ -16,7 +16,7 @@ El instrumento simula la experiencia de un shrutibox real: 13 lengüetas cromati
 - **Teclado fisico**: mapeo estilo piano para las 13 notas + barra espaciadora para Play/Stop
 - **Metrónomo integrado**: metrónomo de precisión con control de BPM (20-240), compases de 1 a 8 beats, beats acentuados configurables y feedback visual en tiempo real. Funciona simultáneamente con el drone. Activable desde el ícono en el visor de notas
 - **Multi-idioma (i18n)**: interfaz disponible en español (Argentina), portugués (Brasil) e inglés (USA), con selector en la esquina superior derecha y persistencia del idioma seleccionado en localStorage
-- **Skins temáticos**: dos temas visuales (Madera Oscura y Madera Clara) con sistema modular y extensible. Toggle intuitivo sol/luna en la esquina superior derecha. Persistencia en localStorage
+- **Skins temáticos**: cuatro temas visuales (Madera Oscura, Madera Clara, Latón Nocturno e Índigo Especiado) con sistema modular y extensible. Selector visual de paletas en la esquina superior derecha. Persistencia en localStorage
 
 ## Stack tecnologico
 
@@ -75,14 +75,16 @@ shrutibox-os-custom/
 │   │   ├── index.js            # Registro de skins: SKINS[], SKINS_BY_ID
 │   │   ├── skinEngine.js       # Motor: aplica CSS vars en :root
 │   │   ├── darkWood.js         # Skin "Madera Oscura" (default)
-│   │   └── lightWood.js        # Skin "Madera Clara"
+│   │   ├── lightWood.js        # Skin "Madera Clara"
+│   │   ├── brassNight.js       # Skin "Latón Nocturno"
+│   │   └── spicedIndigo.js     # Skin "Índigo Especiado"
 │   ├── components/
 │   │   ├── Display.jsx         # Panel informativo (nota activa, estado)
 │   │   ├── NoteGrid.jsx        # Panel frontal del shrutibox (13 lengüetas)
 │   │   ├── NoteButton.jsx      # Lengüeta individual (toggle switch)
 │   │   ├── Controls.jsx        # Instrumento, Play/Stop, volumen, velocidad
 │   │   ├── LanguageSelector.jsx # Selector de idioma (esquina superior derecha)
-│   │   └── SkinSelector.jsx    # Toggle de tema (sol/luna)
+│   │   └── SkinSelector.jsx    # Selector visual de paletas (popover de skins)
 │   ├── i18n/
 │   │   ├── locales/
 │   │   │   ├── es-AR.js        # Español de Argentina
@@ -426,13 +428,15 @@ La interfaz soporta multiples skins (temas visuales) con un sistema modular basa
 ### Skins disponibles
 
 
-| Skin          | ID           | Inspiracion                                                                      |
-| ------------- | ------------ | -------------------------------------------------------------------------------- |
-| Madera Oscura | `dark-wood`  | Palisandro/sheesham del MKS original. Fondos profundos ambar/piedra, texto claro |
-| Madera Clara  | `light-wood` | Arce/abedul (maple/birch). Tonos miel y crema calido, texto oscuro               |
+| Skin             | ID              | Inspiracion                                                                      |
+| ---------------- | --------------- | -------------------------------------------------------------------------------- |
+| Madera Oscura    | `dark-wood`     | Palisandro/sheesham del MKS original. Fondos profundos ambar/piedra, texto claro |
+| Madera Clara     | `light-wood`    | Arce/abedul (maple/birch). Tonos miel y crema calido, texto oscuro               |
+| Latón Nocturno   | `brass-night`   | Base pizarra/teal nocturna con acentos de latón dorado                           |
+| Índigo Especiado | `spiced-indigo` | Índigo/violeta profundo con acento azafrán, paleta de especias indostánicas      |
 
 
-El selector de skin aparece en la esquina superior derecha (icono luna/sol), tanto en la pantalla de inicio como en el instrumento. El skin seleccionado se guarda en `localStorage` y se restaura automaticamente.
+El selector de skin aparece en la esquina superior derecha, tanto en la pantalla de inicio como en el instrumento: un botón con el color del tema activo que abre un popover con todas las paletas disponibles. El skin seleccionado se guarda en `localStorage` y se restaura automaticamente.
 
 ### Agregar un nuevo skin
 
